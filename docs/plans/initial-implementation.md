@@ -147,30 +147,30 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 
 ### Backend — adaptive-difficulty.ts (complete implementation)
 
-- [ ] `computeCompositeScore(attempts, medians, params)`:
+- [x] `computeCompositeScore(attempts, medians, params)`:
   - Per attempt: `rawSpeed = median(tier) / timeTakenMs`; clamp to `[0, 2]`; divide by 2 → `[0, 1]`; neutral 0.5 if `sampleSize < 100`
   - `correctRate = correctCount / windowSize`
   - `composite = params.correctRateWeight × correctRate + params.speedWeight × meanSpeedScore`
-- [ ] `evaluateTierTransition(tier, window20, window10, composite20, composite10, params)`:
+- [x] `evaluateTierTransition(tier, window20, window10, composite20, composite10, params)`:
   - Tier-up: `composite20 >= tierUpThreshold` and `window20.length === 20`
   - Tier-down: `composite10 < tierDownThreshold` and `window10.length === 10`
   - Check tier-up before tier-down; one step at a time
-- [ ] Config caching: both `CONFIG#ALGO_PARAMS` and `CONFIG#SPEED_MEDIANS` cached in Lambda module scope with 5-min TTL
+- [x] Config caching: both `CONFIG#ALGO_PARAMS` and `CONFIG#SPEED_MEDIANS` cached in Lambda module scope with 5-min TTL
 
 ### Backend — GetProgress (`GET /api/progress`)
 
-- [ ] `Promise.all`: profile (eventual) + last 20 attempts + `CONFIG#SPEED_MEDIANS`
-- [ ] 404 `USER_NOT_FOUND` if profile missing
-- [ ] Compute composite score via `computeCompositeScore`
-- [ ] Forward-simulate `attemptsUntilUpgrade` / `attemptsUntilDowngrade` (null at boundary tiers)
-- [ ] Return `{ currentTier, rollingScore, totalAttempts, correctAttempts, attemptsUntilUpgrade, attemptsUntilDowngrade, recentAttempts }`
+- [x] `Promise.all`: profile (eventual) + last 20 attempts + `CONFIG#SPEED_MEDIANS`
+- [x] 404 `USER_NOT_FOUND` if profile missing
+- [x] Compute composite score via `computeCompositeScore`
+- [x] Forward-simulate `attemptsUntilUpgrade` / `attemptsUntilDowngrade` (null at boundary tiers)
+- [x] Return `{ currentTier, rollingScore, totalAttempts, correctAttempts, attemptsUntilUpgrade, attemptsUntilDowngrade, recentAttempts }`
 
 ### Frontend — Progress Dashboard
 
-- [ ] `frontend/src/pages/ProgressPage.tsx` — fetch `GET /api/progress` on mount; loading skeleton; `TierSummaryCard` + `AttemptHistoryTable`
-- [ ] `frontend/src/components/TierBadge.tsx` — shared badge (BEGINNER/INTERMEDIATE/ADVANCED)
-- [ ] `frontend/src/components/ScoreBar.tsx` — visual rolling composite score bar with tier threshold markers
-- [ ] `GamePage` tier change notification — inline banner after `SUBMIT_SUCCESS` if `tierChange.changed === true`
+- [x] `frontend/src/pages/ProgressPage.tsx` — fetch `GET /api/progress` on mount; loading skeleton; `TierSummaryCard` + `AttemptHistoryTable`
+- [x] `frontend/src/components/TierBadge.tsx` — tier badge inline in GamePage/ProgressPage (not extracted to separate component)
+- [x] `frontend/src/components/ScoreBar.tsx` — visual rolling composite score bar (inline in ProgressPage)
+- [x] `GamePage` tier change notification — inline banner in `ResultCard` after `SUBMIT_SUCCESS` if `tierChange.changed === true`
 
 **Verification:**
 - 20 consecutive correct BEGINNER answers → tier promotes to INTERMEDIATE in SubmitAnswer response
@@ -191,14 +191,14 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 
 - [ ] `frontend/src/components/ErrorDisplay.tsx` — distinguishes timeout / 5xx / 4xx; Retry re-fetches snippet; Skip re-fetches without recording attempt
 - [ ] `frontend/src/components/GlobalErrorBoundary.tsx` — catches render errors; static fallback with Reload button
-- [ ] `frontend/src/components/TierCompleteCard.tsx` — "You've completed all X snippets"; link to progress dashboard
-- [ ] `AuthCallbackPage` — handle `?error=` from Cognito (user cancelled) → "Login failed" + retry link
-- [ ] `AuthCallbackPage` — CSRF state mismatch → redirect to `/`
+- [ ] `frontend/src/components/TierCompleteCard.tsx` — "You've completed all X snippets"; link to progress dashboard (currently inline in GamePage)
+- [x] `AuthCallbackPage` — handle `?error=` from Cognito (user cancelled) → "Login failed" + retry link
+- [x] `AuthCallbackPage` — CSRF state mismatch → redirect to `/`
 - [ ] `AuthCallbackPage` — `/auth/session` failure → allow session for access token lifetime (55 min) then require re-login
-- [ ] `SubmitButton` disabled after first click (client guard; backend `TransactWriteItems` is authoritative)
-- [ ] 409 response → "Already submitted" message (no crash)
-- [ ] `SelectionSummary` at cap → "Maximum lines selected (N/N). Deselect a line to change your answer."
-- [ ] `ProtectedRoute` — awaits one `POST /auth/refresh` attempt before redirecting; shows blank during wait
+- [x] `SubmitButton` disabled after first click (client guard; backend `TransactWriteItems` is authoritative)
+- [ ] 409 response → "Already submitted" message (no crash; currently falls into generic ERROR state)
+- [x] `SelectionSummary` at cap → "Maximum lines selected (N/N). Deselect a line to change your answer."
+- [x] `ProtectedRoute` — awaits one `POST /auth/refresh` attempt before redirecting; shows blank during wait
 
 **Verification:**
 - ERROR state renders Retry and Skip; both work without losing game state
