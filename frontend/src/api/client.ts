@@ -1,4 +1,5 @@
 // @spec AUTH-023, AUTH-024, AUTH-025, AUTH-026, AUTH-031
+import type { GetSnippetResponse, SubmitRequest, SubmitResponse, ProgressResponse } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -25,7 +26,7 @@ async function doRefresh(): Promise<string | null> {
   return data.access_token;
 }
 
-export async function refreshTokens(): Promise<string | null> {
+export async function refreshTokens(silent = false): Promise<string | null> {
   if (isRefreshing) {
     return new Promise((resolve) => {
       refreshQueue.push(resolve);
@@ -36,7 +37,7 @@ export async function refreshTokens(): Promise<string | null> {
   refreshQueue.forEach((cb) => cb(token));
   refreshQueue = [];
   isRefreshing = false;
-  if (!token) {
+  if (!token && !silent) {
     window.dispatchEvent(new Event("SESSION_EXPIRED"));
   }
   return token;
@@ -84,3 +85,9 @@ export async function request<T>(
     clearTimeout(timeout);
   }
 }
+
+export const api = {
+  getSnippet: () => request<GetSnippetResponse>("GET", "/api/snippet"),
+  submitAnswer: (body: SubmitRequest) => request<SubmitResponse>("POST", "/api/answer", body),
+  getProgress: () => request<ProgressResponse>("GET", "/api/progress"),
+};

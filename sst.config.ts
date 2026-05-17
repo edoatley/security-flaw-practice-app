@@ -13,7 +13,6 @@ export default $config({
   },
   async run() {
     const isProd = $app.stage === "production";
-    const isDev = $app.stage === "dev";
 
     // 1. DynamoDB — single-table design
     const table = new sst.aws.Dynamo("AppTable", {
@@ -50,24 +49,36 @@ export default $config({
       domain: { prefix: hostedUiPrefix },
     });
 
-    const callbackUrl = isDev
-      ? "https://localhost:5173/auth/callback"
-      : isProd
-        ? "https://secure-train.edoatley.co.uk/auth/callback"
-        : `https://${$app.stage}.secure-train.edoatley.co.uk/auth/callback`;
+    const localCallbackUrl = "https://localhost:5173/auth/callback";
+    const localLogoutUrl = "https://localhost:5173";
 
-    const logoutUrl = isDev
-      ? "https://localhost:5173"
-      : isProd
-        ? "https://secure-train.edoatley.co.uk"
-        : `https://${$app.stage}.secure-train.edoatley.co.uk`;
+    const deployedCallbackUrl = isProd
+      ? "https://secure-train.edoatley.co.uk/auth/callback"
+      : `https://${$app.stage}.secure-train.edoatley.co.uk/auth/callback`;
+
+    const deployedLogoutUrl = isProd
+      ? "https://secure-train.edoatley.co.uk"
+      : `https://${$app.stage}.secure-train.edoatley.co.uk`;
+
+    // Both localhost and deployed URL registered so sst dev works alongside deployed frontend
+    const callbackUrls = isProd
+      ? [deployedCallbackUrl]
+      : [localCallbackUrl, deployedCallbackUrl];
+
+    const logoutUrls = isProd
+      ? [deployedLogoutUrl]
+      : [localLogoutUrl, deployedLogoutUrl];
+
+    // VITE_COGNITO_REDIRECT_URI always points to localhost when running sst dev
+    const callbackUrl = localCallbackUrl;
+    const logoutUrl = localLogoutUrl;
 
     const userPoolClient = userPool.addClient("UserPoolClient", {
-      callbackUrls: [callbackUrl],
+      callbackUrls,
       transform: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         client: (args: any) => {
-          args.logoutUrls = [logoutUrl];
+          args.logoutUrls = logoutUrls;
           args.generateSecret = false;
           args.allowedOauthFlows = ["code"];
           args.explicitAuthFlows = [
@@ -85,6 +96,20 @@ export default $config({
         originAccessControlOriginType: "s3",
         signingBehavior: "always",
         signingProtocol: "sigv4",
+      }
+    );
+
+    // CORS response headers policy — allows the SPA to fetch snippet content
+    const snippetCorsPolicy = new aws.cloudfront.ResponseHeadersPolicy(
+      "SnippetCorsPolicy",
+      {
+        corsConfig: {
+          accessControlAllowCredentials: false,
+          accessControlAllowHeaders: { items: ["*"] },
+          accessControlAllowMethods: { items: ["GET", "HEAD"] },
+          accessControlAllowOrigins: { items: ["*"] },
+          originOverride: true,
+        },
       }
     );
 
@@ -108,6 +133,7 @@ export default $config({
             queryString: false,
             cookies: { forward: "none" },
           },
+          responseHeadersPolicyId: snippetCorsPolicy.id,
           minTtl: 0,
           defaultTtl: 86400,
           maxTtl: 31536000,
@@ -144,15 +170,14 @@ export default $config({
     });
 
     // 5. API Gateway v2
-    const allowOrigins = isDev
-      ? ["https://localhost:5173"]
-      : isProd
-        ? ["https://secure-train.edoatley.co.uk"]
-        : [$interpolate`https://${$app.stage}.secure-train.edoatley.co.uk`];
-
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: {
-        allowOrigins,
+        allowOrigins: isProd
+          ? ["https://secure-train.edoatley.co.uk"]
+          : [
+              "https://localhost:5173",
+              $interpolate`https://${$app.stage}.secure-train.edoatley.co.uk`,
+            ],
         allowMethods: ["GET", "POST"],
         allowHeaders: ["Authorization", "Content-Type"],
         allowCredentials: true,

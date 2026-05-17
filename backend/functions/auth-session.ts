@@ -23,11 +23,14 @@ export const handler = async (
     return error(400, "MISSING_REFRESH_TOKEN", "refresh_token is required");
   }
 
+  // SameSite=None required for cross-origin dev (localhost → execute-api.amazonaws.com).
+  // In production the frontend and API share the same apex domain, so the cookie is
+  // implicitly same-site regardless; SameSite=None is safe because we also require Secure.
   const cookieValue = [
     `refresh_token=${refreshToken}`,
     "HttpOnly",
     "Secure",
-    "SameSite=Strict",
+    "SameSite=None",
     "Path=/auth",
     "Max-Age=2592000",
   ].join("; ");

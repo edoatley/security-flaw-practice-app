@@ -1,0 +1,35 @@
+[
+  {
+    "snippetId": "a3f1c2d4-1234-4abc-8def-000000000001",
+    "title": "SQL Injection via String Concatenation",
+    "language": "JAVA",
+    "difficulty": "BEGINNER",
+    "owaspCategory": "A03_INJECTION",
+    "vulnerableLines": [17, 18],
+    "explanation": "Lines 17-18 build the SQL query by directly concatenating the `username` and `password` parameters into the query string. An attacker can inject SQL syntax — for example, entering `' OR '1'='1` as the username bypasses authentication entirely. Fix: use a `PreparedStatement` with parameterised placeholders (`?`) so the database driver handles escaping.",
+    "source": "Adapted from OWASP WebGoat — SQL Injection module",
+    "file": "java/beginner/sql-injection.java"
+  },
+  {
+    "snippetId": "b4e2d3f5-2345-4bcd-9ef0-000000000002",
+    "title": "Reflected XSS in Servlet Response",
+    "language": "JAVA",
+    "difficulty": "BEGINNER",
+    "owaspCategory": "A03_INJECTION",
+    "vulnerableLines": [19],
+    "explanation": "Line 19 writes the raw `query` parameter from the HTTP request directly into the HTML response without encoding. An attacker can craft a URL such as `?q=<script>alert(document.cookie)</script>` and trick a victim into clicking it, causing the browser to execute attacker-controlled JavaScript in the context of the site. Fix: HTML-encode user-supplied values before rendering them — for example using `StringEscapeUtils.escapeHtml4(query)` from Apache Commons Text.",
+    "source": "Adapted from OWASP WebGoat — Cross-Site Scripting module",
+    "file": "java/beginner/reflected-xss.java"
+  },
+  {
+    "snippetId": "c5f3e4a6-3456-4cde-a001-000000000003",
+    "title": "XXE via Unconfigured DocumentBuilder",
+    "language": "JAVA",
+    "difficulty": "INTERMEDIATE",
+    "owaspCategory": "A05_SECURITY_MISCONFIGURATION",
+    "vulnerableLines": [10],
+    "explanation": "Line 10 creates a `DocumentBuilderFactory` with default settings. By default, Java's XML parser supports external entity references (XXE). An attacker who controls the XML input can include a `<!DOCTYPE>` declaration with an `ENTITY` that reads a local file (e.g. `/etc/passwd`) or makes a network request to an internal service. Fix: disable external entity processing before parsing — call `factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true)` immediately after creating the factory.",
+    "source": "Adapted from OWASP XXE Prevention Cheat Sheet",
+    "file": "java/intermediate/xxe-document-builder.java"
+  }
+]

@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refreshTokens().then((token) => {
+    refreshTokens(true).then((token) => {
       if (token) {
         setIsAuthenticated(true);
         scheduleRefresh(3600);

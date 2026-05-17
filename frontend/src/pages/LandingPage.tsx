@@ -54,7 +54,7 @@ export function LandingPage() {
     url.searchParams.set("code_challenge", challenge);
     url.searchParams.set("code_challenge_method", "S256");
     url.searchParams.set("state", state);
-    url.searchParams.set("scope", "openid email profile");
+    url.searchParams.set("scope", "openid email");
 
     window.location.href = url.toString();
   };
