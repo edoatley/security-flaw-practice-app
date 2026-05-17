@@ -1,19 +1,24 @@
 {
   "name": "security-flaw-practice-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "Security vulnerability education platform",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "edoatley",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.600.0",
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
     "sst": "4.14.1"
   },
   "devDependencies": {
-    "@types/aws-lambda": "8.10.161"
+    "@types/aws-lambda": "8.10.161",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
   }
 }

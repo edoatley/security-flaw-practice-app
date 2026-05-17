@@ -5,42 +5,269 @@ export default $config({
     return {
       name: "security-flaw-practice-app",
       removal: input?.stage === "production" ? "retain" : "remove",
-      home: "aws", // Targets AWS provider
+      home: "aws",
+      providers: {
+        aws: { region: "eu-west-2" },
+      },
     };
   },
   async run() {
-    // 1. Define the Backend API Gateway (HTTP API v2)
-    const api = new sst.aws.ApiGatewayV2("MyApi", {
-      cors: {
-        allowOrigins: ["*"], // Restrict this in production to your frontend URL
-        allowMethods: ["GET", "POST", "PUT", "DELETE"],
+    const isProd = $app.stage === "production";
+    const isDev = $app.stage === "dev";
+
+    // 1. DynamoDB — single-table design
+    const table = new sst.aws.Dynamo("AppTable", {
+      fields: {
+        PK: "string",
+        SK: "string",
+        GSI1PK: "string",
+        GSI1SK: "string",
+      },
+      primaryIndex: { hashKey: "PK", rangeKey: "SK" },
+      globalIndexes: {
+        "GSI1PK-GSI1SK-index": { hashKey: "GSI1PK", rangeKey: "GSI1SK" },
+      },
+      billing: { mode: "on-demand" },
+    });
+
+    // 2. S3 bucket for snippet content
+    const snippetBucket = new aws.s3.BucketV2("SnippetBucket", {
+      forceDestroy: !isProd,
+    });
+
+    new aws.s3.BucketPublicAccessBlock("SnippetBucketPublicAccessBlock", {
+      bucket: snippetBucket.id,
+      blockPublicAcls: true,
+      blockPublicPolicy: true,
+      ignorePublicAcls: true,
+      restrictPublicBuckets: true,
+    });
+
+    // 3. Cognito User Pool — email + password only
+    const hostedUiPrefix = `sfpa-793976-${$app.stage}`;
+    const userPool = new sst.aws.CognitoUserPool("UserPool", {
+      usernames: ["email"],
+      domain: { prefix: hostedUiPrefix },
+    });
+
+    const callbackUrl = isDev
+      ? "https://localhost:5173/auth/callback"
+      : isProd
+        ? "https://secure-train.edoatley.co.uk/auth/callback"
+        : `https://${$app.stage}.secure-train.edoatley.co.uk/auth/callback`;
+
+    const logoutUrl = isDev
+      ? "https://localhost:5173"
+      : isProd
+        ? "https://secure-train.edoatley.co.uk"
+        : `https://${$app.stage}.secure-train.edoatley.co.uk`;
+
+    const userPoolClient = userPool.addClient("UserPoolClient", {
+      callbackUrls: [callbackUrl],
+      transform: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        client: (args: any) => {
+          args.logoutUrls = [logoutUrl];
+          args.generateSecret = false;
+          args.allowedOauthFlows = ["code"];
+          args.explicitAuthFlows = [
+            "ALLOW_USER_SRP_AUTH",
+            "ALLOW_REFRESH_TOKEN_AUTH",
+          ];
+        },
+      },
+    });
+
+    // 4. CloudFront distribution for snippet content (OAC)
+    const snippetOriginAccessControl = new aws.cloudfront.OriginAccessControl(
+      "SnippetOAC",
+      {
+        originAccessControlOriginType: "s3",
+        signingBehavior: "always",
+        signingProtocol: "sigv4",
       }
+    );
+
+    const snippetDistribution = new aws.cloudfront.Distribution(
+      "SnippetDistribution",
+      {
+        enabled: true,
+        origins: [
+          {
+            originId: "snippetS3",
+            domainName: snippetBucket.bucketRegionalDomainName,
+            originAccessControlId: snippetOriginAccessControl.id,
+          },
+        ],
+        defaultCacheBehavior: {
+          targetOriginId: "snippetS3",
+          viewerProtocolPolicy: "redirect-to-https",
+          allowedMethods: ["GET", "HEAD"],
+          cachedMethods: ["GET", "HEAD"],
+          forwardedValues: {
+            queryString: false,
+            cookies: { forward: "none" },
+          },
+          minTtl: 0,
+          defaultTtl: 86400,
+          maxTtl: 31536000,
+        },
+        restrictions: {
+          geoRestriction: { restrictionType: "none" },
+        },
+        viewerCertificate: {
+          cloudfrontDefaultCertificate: true,
+        },
+      }
+    );
+
+    // Grant CloudFront OAC read access to the snippet bucket
+    new aws.s3.BucketPolicy("SnippetBucketPolicy", {
+      bucket: snippetBucket.id,
+      policy: $jsonStringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Sid: "AllowCloudFrontServicePrincipal",
+            Effect: "Allow",
+            Principal: { Service: "cloudfront.amazonaws.com" },
+            Action: "s3:GetObject",
+            Resource: $interpolate`${snippetBucket.arn}/*`,
+            Condition: {
+              StringEquals: {
+                "AWS:SourceArn": snippetDistribution.arn,
+              },
+            },
+          },
+        ],
+      }),
     });
 
-    // 2. Define API Routes linked to Lambda Functions
-    api.route("GET /api/hello", {
-      handler: "backend/api.handler",
-      memory: "1024 MB",
+    // 5. API Gateway v2
+    const allowOrigins = isDev
+      ? ["https://localhost:5173"]
+      : isProd
+        ? ["https://secure-train.edoatley.co.uk"]
+        : [$interpolate`https://${$app.stage}.secure-train.edoatley.co.uk`];
+
+    const api = new sst.aws.ApiGatewayV2("Api", {
+      cors: {
+        allowOrigins,
+        allowMethods: ["GET", "POST"],
+        allowHeaders: ["Authorization", "Content-Type"],
+        allowCredentials: true,
+      },
+    });
+
+    // JWT authorizer using Cognito
+    const region = aws.getRegionOutput().name;
+    const authorizer = api.addAuthorizer({
+      name: "CognitoAuthorizer",
+      jwt: {
+        issuer: $interpolate`https://cognito-idp.${region}.amazonaws.com/${userPool.id}`,
+        audiences: [userPoolClient.id],
+      },
+    });
+
+    // Shared Lambda environment
+    const sharedEnv = {
+      TABLE_NAME: table.name,
+      SNIPPET_BUCKET: snippetBucket.id,
+      CLOUDFRONT_DOMAIN: snippetDistribution.domainName,
+      COGNITO_USER_POOL_ID: userPool.id,
+      COGNITO_CLIENT_ID: userPoolClient.id,
+    };
+
+    // 6. Lambda functions — game routes (JWT authorizer required)
+    api.route(
+      "GET /api/snippet",
+      {
+        handler: "backend/functions/get-snippet.handler",
+        memory: "256 MB",
+        timeout: "10 seconds",
+        environment: sharedEnv,
+        link: [table],
+      },
+      { auth: { jwt: { authorizer: authorizer.id } } }
+    );
+
+    api.route(
+      "POST /api/answer",
+      {
+        handler: "backend/functions/submit-answer.handler",
+        memory: "256 MB",
+        timeout: "10 seconds",
+        environment: sharedEnv,
+        link: [table],
+      },
+      { auth: { jwt: { authorizer: authorizer.id } } }
+    );
+
+    api.route(
+      "GET /api/progress",
+      {
+        handler: "backend/functions/get-progress.handler",
+        memory: "256 MB",
+        timeout: "10 seconds",
+        environment: sharedEnv,
+        link: [table],
+      },
+      { auth: { jwt: { authorizer: authorizer.id } } }
+    );
+
+    // Auth routes — no JWT authorizer
+    const cognitoDomain = $interpolate`https://sfpa-793976-${$app.stage}.auth.${region}.amazoncognito.com`;
+
+    const authEnv = {
+      COGNITO_DOMAIN: cognitoDomain,
+      COGNITO_CLIENT_ID: userPoolClient.id,
+    };
+
+    api.route("POST /auth/session", {
+      handler: "backend/functions/auth-session.handler",
+      memory: "128 MB",
       timeout: "10 seconds",
+      environment: authEnv,
     });
 
-    // 3. Define the SPA Frontend (S3 + CloudFront website hosting)
-    const web = new sst.aws.StaticSite("MyWeb", {
+    api.route("POST /auth/refresh", {
+      handler: "backend/functions/auth-refresh.handler",
+      memory: "128 MB",
+      timeout: "10 seconds",
+      environment: authEnv,
+    });
+
+    api.route("POST /auth/logout", {
+      handler: "backend/functions/auth-logout.handler",
+      memory: "128 MB",
+      timeout: "10 seconds",
+      environment: authEnv,
+    });
+
+    // 7. Frontend SPA
+    const web = new sst.aws.StaticSite("Web", {
       path: "frontend",
       build: {
         command: "npm run build",
         output: "dist",
       },
-      // Injects the live API Gateway URL into the frontend build environment variables
+      errorPage: "index.html",
       environment: {
         VITE_API_URL: api.url,
+        VITE_COGNITO_DOMAIN: cognitoDomain,
+        VITE_COGNITO_CLIENT_ID: userPoolClient.id,
+        VITE_COGNITO_REDIRECT_URI: callbackUrl,
       },
     });
 
-    // Output values to the terminal screen on completion
     return {
-      apiGatewayUrl: api.url,
+      apiUrl: api.url,
       frontendUrl: web.url,
+      snippetCdnDomain: snippetDistribution.domainName,
+      cognitoUserPoolId: userPool.id,
+      cognitoClientId: userPoolClient.id,
+      tableName: table.name,
+      snippetBucket: snippetBucket.id,
     };
   },
 });
