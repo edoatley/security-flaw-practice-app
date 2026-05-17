@@ -146,9 +146,9 @@ code_verifier=<VERIFIER from sessionStorage>
 ---
 
 ### AUTH-016 [ ]
-**The `Set-Cookie` header set by the AuthSession Lambda shall include the attributes `HttpOnly; Secure; SameSite=Strict; Path=/auth`.**
+**The `Set-Cookie` header set by the AuthSession Lambda shall include the attributes `HttpOnly; Secure; SameSite=None; Path=/auth`.**
 
-*Rationale: `HttpOnly` prevents JavaScript access; `Secure` enforces HTTPS transport; `SameSite=Strict` mitigates CSRF; `Path=/auth` restricts the cookie's scope to the single endpoint that needs it.*
+*Rationale: `HttpOnly` prevents JavaScript from reading the token (XSS protection); `Secure` enforces HTTPS transport and is required alongside `SameSite=None`; `SameSite=None` allows the cookie to be sent on cross-origin requests from the SPA to the API (necessary in local dev and with separate subdomains); `Path=/auth` restricts the cookie's scope to the auth endpoints only.*
 
 ---
 
@@ -313,7 +313,7 @@ code_verifier=<VERIFIER from sessionStorage>
 ---
 
 ### AUTH-043 [ ]
-**When `POST /auth/logout` is called, the backend shall respond with a `Set-Cookie` header that expires the refresh cookie by setting `Max-Age=0` with the same `HttpOnly; Secure; SameSite=Strict; Path=/auth` attributes.**
+**When `POST /auth/logout` is called, the backend shall respond with a `Set-Cookie` header that expires the refresh cookie by setting `Max-Age=0` with the same `HttpOnly; Secure; SameSite=None; Path=/auth` attributes.**
 
 *Rationale: The cookie must be cleared with identical attributes to those used when it was set; a mismatch in path or security flags will cause the browser to retain the old cookie.*
 
@@ -401,7 +401,7 @@ mkcert localhost
 ---
 
 ### AUTH-055 [ ]
-**The cookie attributes (`HttpOnly; Secure; SameSite=Strict; Path=/auth`) shall be identical in local development and production environments.**
+**The cookie attributes (`HttpOnly; Secure; SameSite=None; Path=/auth`) shall be identical in local development and production environments.**
 
 *Rationale: Testing with relaxed cookie attributes in development means the production security behaviour is never exercised locally, which is precisely the scenario most likely to hide auth bugs.*
 
@@ -424,9 +424,9 @@ mkcert localhost
 ---
 
 ### AUTH-058 [ ]
-**The refresh token cookie set by the AuthSession Lambda shall have the `SameSite=Strict` attribute.**
+**The refresh token cookie set by the AuthSession Lambda shall have the `SameSite=None` attribute.**
 
-*Rationale: `SameSite=Strict` prevents the cookie from being sent with cross-site requests, mitigating CSRF attacks against the `/auth/refresh` endpoint.*
+*Rationale: `SameSite=None` is required for the cookie to be sent on cross-origin requests from the SPA (on `localhost:5173` in dev, or a different subdomain) to the API. CSRF risk is mitigated by the combination of `Path=/auth` (limits scope to auth endpoints), the fact that `POST /auth/refresh` returns a new access token in the body (not a state-changing mutation), and the PKCE + `state` parameter protection on the login flow.*
 
 ---
 
@@ -501,7 +501,7 @@ The 66 specifications above map to all 13 required behaviour areas. The cross-re
 | Logout | AUTH-040 – AUTH-045 |
 | Unauthenticated access to protected routes: redirect to login | AUTH-046 – AUTH-049 |
 | mkcert HTTPS requirement for local dev | AUTH-050 – AUTH-055 |
-| Cookie attributes: HttpOnly, Secure, SameSite=Strict, Path=/auth | AUTH-056 – AUTH-061 |
+| Cookie attributes: HttpOnly, Secure, SameSite=None, Path=/auth | AUTH-056 – AUTH-061 |
 | Access token scope: memory only, never localStorage | AUTH-062 – AUTH-066 |
 
 ---
@@ -548,7 +548,7 @@ The LLD confirms that `id_token` is stored in memory (AUTH-066) but does not spe
 **SCOPE-01 — `credentials: 'include'` on game API routes.**
 AUTH-060 and AUTH-061 ensure credentials are sent to `/auth/*` routes. However, `allowCredentials: true` is set at the API Gateway level (not per-route). This means the `Authorization` header requirement and `credentials: 'include'` mode would also apply to `GET /api/snippet`, `POST /api/answer`, and `GET /api/progress` if the browser sends the cookie along with the access token. This is harmless but should be confirmed as intentional: the game Lambdas use JWT auth (not cookie auth), so the cookie being forwarded is redundant but not a security risk.
 
-**SCOPE-02 — Resolved.** Production deployment uses `secure-train.edoatley.co.uk` (SPA) and `api.secure-train.edoatley.co.uk` (API) — both share the same registrable domain (eTLD+1 = `edoatley.co.uk`). Browsers treat these as same-site, so `SameSite=Strict` cookies set by the API are correctly forwarded on SPA→API requests. See `docs/llds/sst-infrastructure.md §6` for the custom domain configuration.
+**SCOPE-02 — Resolved.** `SameSite=None; Secure` is used so the cookie is sent cross-origin from the SPA to the API. This is required in local dev (SPA on `localhost:5173`, API on `execute-api.amazonaws.com`) and remains correct in production where both share `secure-train.edoatley.co.uk` (same-site in practice). `Secure` is mandatory alongside `SameSite=None`. See `docs/llds/sst-infrastructure.md §6` for the custom domain configuration.
 
 **SCOPE-03 — Resolved.** Cookie `Path=/auth` (widened from `/auth/refresh`) means the cookie is sent to all `/auth/*` routes including `/auth/logout`. The `AuthLogout` Lambda can therefore read the refresh token from the cookie and pass it to Cognito's `/oauth2/revoke` endpoint without requiring the SPA to resend it in the request body.
 

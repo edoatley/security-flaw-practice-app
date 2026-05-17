@@ -92,8 +92,8 @@ All five functions are registered in `sst.config.ts`. The three game functions r
 
 ### Key Design Decisions
 
-- **JWT storage:** access token in memory only; refresh token in httpOnly cookie (`Path=/auth; SameSite=Strict; Secure`) set by `AuthSession` Lambda
-- **Custom domain:** production runs on `secure-train.edoatley.co.uk` (SPA) and `api.secure-train.edoatley.co.uk` (API) — same apex domain required for `SameSite=Strict` cookies to work
+- **JWT storage:** access token in memory only; refresh token in httpOnly cookie (`Path=/auth; SameSite=None; Secure`) set by `AuthSession` Lambda
+- **Custom domain:** production runs on `secure-train.edoatley.co.uk` (SPA) and `api.secure-train.edoatley.co.uk` (API). `SameSite=None; Secure` is used so the cookie works cross-origin in local dev (SPA on `localhost:5173`, API on `execute-api.amazonaws.com`); in production the cookie is effectively same-site anyway
 - **Local dev HTTPS:** Vite serves on `https://localhost:5173` via `mkcert` — run `mkcert -install && mkcert localhost` once per machine; cert files are git-ignored
 - **Answer keys** (`vulnerableLines`, `explanation`) returned only on a *correct* submission — omitted from incorrect submission responses; never sent by `GetSnippet`
 - **Snippet content** served from S3 via a dedicated CloudFront distribution (not the SPA's CDN); Lambda returns a URL, not the content

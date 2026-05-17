@@ -112,7 +112,7 @@ AWS_PROFILE=sandbox npx sst dev --mode=basic
 cd frontend && npm run dev
 ```
 
-The frontend will be at `https://localhost:5173` (HTTPS is required for `SameSite=Strict` cookies). mkcert certs must be present — see First-Time Setup.
+The frontend will be at `https://localhost:5173` (HTTPS is required for `SameSite=None` cookies). mkcert certs must be present — see First-Time Setup.
 
 ---
 
@@ -230,7 +230,7 @@ SST stores an AppSync WebSocket endpoint in its deployment state from certain pr
 If Vite starts on `http://` instead of `https://`, the `SameSite=None; Secure` cookie will be blocked and auth won't work. Check that `localhost.pem` and `localhost-key.pem` exist in the project root. The `mkcert -install` step requires sudo and a terminal (cannot be run from a script).
 
 **Refresh token cookie requires `SameSite=None` in local dev.**
-In production, the frontend and API share the same apex domain (`secure-train.edoatley.co.uk`), so a `SameSite=Strict` cookie would work. In local dev the API is on `execute-api.amazonaws.com` — a different origin — so the cookie is set with `SameSite=None; Secure` to allow the cross-origin credential flow. Vite's HTTPS (mkcert) satisfies the `Secure` requirement.
+In production, the frontend and API share the same apex domain (`secure-train.edoatley.co.uk`), so a `SameSite=None` cookie would work. In local dev the API is on `execute-api.amazonaws.com` — a different origin — so the cookie is set with `SameSite=None; Secure` to allow the cross-origin credential flow. Vite's HTTPS (mkcert) satisfies the `Secure` requirement.
 
 **`SESSION_EXPIRED` race condition on initial load.**
 `AuthProvider` fires a silent `refreshTokens(true)` on startup. The `silent=true` flag suppresses the `SESSION_EXPIRED` event so a failed startup refresh (no cookie yet) does not clobber the access token that `AuthCallbackPage` writes after a successful PKCE exchange.

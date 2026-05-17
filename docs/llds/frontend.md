@@ -188,7 +188,7 @@ Cognito redirects to /auth/callback?code=...
         &code_verifier=<VERIFIER>
    Response: { access_token, id_token, refresh_token, expires_in }
 8. access_token and id_token are stored in module-level memory (React context)
-9. refresh_token is stored in an httpOnly, Secure, SameSite=Strict cookie
+9. refresh_token is stored in an httpOnly, Secure, SameSite=None cookie
    - This requires a thin server-side endpoint (see §3.2 below)
 10. sessionStorage entries (state, verifier) are cleared
 11. Navigate to /game
@@ -202,7 +202,7 @@ The Cognito token endpoint returns the `refresh_token` in the JSON body of the t
 
 **Approach (chosen): Thin server-side session endpoint via API Gateway Lambda**
 
-A dedicated `POST /auth/session` Lambda endpoint (confirmed fourth Lambda alongside GetSnippet, SubmitAnswer, GetProgress) receives the `refresh_token` in the request body over HTTPS, then responds with `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=Strict; Path=/auth`. This cookie is only sent by the browser to `/auth/refresh`.
+A dedicated `POST /auth/session` Lambda endpoint receives the `refresh_token` in the request body over HTTPS, then responds with `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=None; Path=/auth`. `SameSite=None` is required because in local dev the SPA is on `localhost:5173` and the API is on a different origin (`execute-api.amazonaws.com`); in production both share `secure-train.edoatley.co.uk` so the cookie is effectively same-site regardless. The `Secure` attribute is mandatory alongside `SameSite=None`.
 
 A paired `POST /auth/refresh` Lambda reads the httpOnly cookie (forwarded by API Gateway via configured cookie passthrough), calls the Cognito token endpoint to exchange the refresh token for a new access token, and returns the new access token in the JSON response body. Neither Lambda requires a Cognito JWT authorizer — they are the mechanism by which the access token is obtained, so they operate pre-auth.
 
@@ -705,7 +705,7 @@ The CloudFront distribution sets:
 
 **Alternative considered:** Store both tokens in localStorage.
 
-**Rationale for decision:** localStorage is accessible to any JavaScript on the page, including injected third-party scripts. A stored access token would be exfiltrated by an XSS attack. Memory storage means the token is lost on page refresh (mitigated by silent refresh via the httpOnly cookie). The httpOnly cookie for the refresh token is not readable by JS, so it cannot be exfiltrated by XSS (though it is still vulnerable to CSRF — mitigated by `SameSite=Strict`).
+**Rationale for decision:** localStorage is accessible to any JavaScript on the page, including injected third-party scripts. A stored access token would be exfiltrated by an XSS attack. Memory storage means the token is lost on page refresh (mitigated by silent refresh via the httpOnly cookie). The httpOnly cookie for the refresh token is not readable by JS, so it cannot be exfiltrated by XSS. The `SameSite=None; Secure` attributes prevent the cookie from being sent in cross-site navigations that could be triggered by CSRF, and the `Path=/auth` restriction limits cookie scope to the auth endpoints only.
 
 ### 10.2 Routing: Hash vs. History Mode
 
@@ -749,11 +749,11 @@ The CloudFront distribution sets:
 
 ### 10.7 Local Dev HTTPS: mkcert vs. Relaxed Cookie Policy
 
-**Decision:** Use `mkcert` to serve the Vite dev server over `https://localhost:5173`. Cookie attributes (`HttpOnly; Secure; SameSite=Strict`) are identical in dev and production.
+**Decision:** Use `mkcert` to serve the Vite dev server over `https://localhost:5173`. The cookie is set with `HttpOnly; Secure; SameSite=None` in both dev and production.
 
-**Alternative considered:** Set `SameSite=Lax` and omit `Secure` in dev only (detected via a `STAGE` env var in the Lambda).
+**Alternative considered:** Set `SameSite=Strict` in production and `SameSite=Lax` in dev only (detected via a `STAGE` env var in the Lambda).
 
-**Rationale for decision:** The httpOnly cookie is a security-critical path. Testing it with different attributes in dev means the production behaviour is untested locally — exactly the scenario most likely to hide auth bugs. `mkcert` is a one-time 5-minute setup per developer machine. The cert files (`localhost.pem`, `localhost-key.pem`) are git-ignored and referenced in `vite.config.ts` under `server.https`.
+**Rationale for decision:** In local dev, the SPA (`localhost:5173`) and the API (`execute-api.amazonaws.com`) are on different origins, so the browser will not send a `SameSite=Strict` cookie on cross-origin requests. `SameSite=None` is required for the cookie to be attached to the `POST /auth/refresh` call from localhost. `SameSite=None` mandates `Secure`, which is why `mkcert` HTTPS is required — without it the browser silently drops the cookie. In production both origins share the `secure-train.edoatley.co.uk` apex domain so the cookie behaves as same-site in practice.
 
 **Developer setup:**
 ```bash
@@ -772,7 +772,7 @@ The following questions identify gaps, unspecified failure modes, or implicit as
 
 1. **What happens when the user opens two browser tabs simultaneously?** The access token is stored in a module-level variable, which is per-tab (each tab is an isolated JS context). If tab A silently refreshes, tab B still holds the old access token. Tab B will eventually get a 401, attempt its own refresh, but the refresh token may have already been rotated. Does Cognito support refresh token rotation? If it does, tab B's refresh will fail, forcing the user to log in again on tab B. If it does not rotate, both tabs will independently hold valid access tokens until their separate expiry times. The LLD does not address cross-tab coordination.
 
-2. **What happens to the game state when a silent refresh occurs mid-submission?** The user clicks Submit at t=54m55s, the SUBMITTING fetch starts, and at t=55m the proactive refresh timer fires. Can two concurrent requests be made to `/auth/refresh`? The `isRefreshing` flag handles 401-triggered refreshes, but the proactive timer refresh is separate. A race between the proactive refresh and a 401-triggered refresh could result in two simultaneous calls to `/auth/refresh`. The LLD does not specify whether the proactive timer also sets and checks `isRefreshing`.
+2. **What happens to the game state when a silent refresh occurs mid-submission?** The proactive timer and the 401-triggered path both call `refreshTokens()` in `api/client.ts`, which uses a shared module-level `isRefreshing` flag and a callback queue. If both fire simultaneously, the second caller queues on the first's promise and receives the same token result — only one `/auth/refresh` request is made. The `silent=true` parameter (used by the startup refresh in `AuthProvider`) additionally suppresses the `SESSION_EXPIRED` event so a failed startup check does not clobber a concurrently-obtained token.
 
 3. **What happens if the `/auth/session` endpoint (which sets the httpOnly refresh cookie) fails during the initial token exchange?** The access token was received from Cognito, but the refresh cookie was never set. The user can use the app for the duration of the access token's lifetime (~60 min), but the next refresh will fail immediately (no cookie to send). The LLD does not specify a retry strategy for the session endpoint failure.
 

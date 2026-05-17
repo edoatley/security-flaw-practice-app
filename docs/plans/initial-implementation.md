@@ -45,7 +45,7 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 
 ### Backend
 
-- [x] `backend/functions/auth-session.ts` — sets `refresh_token` httpOnly cookie (`Path=/auth; SameSite=Strict; Secure; Max-Age=2592000`); returns `{ ok: true }`
+- [x] `backend/functions/auth-session.ts` — sets `refresh_token` httpOnly cookie (`Path=/auth; SameSite=None; Secure; Max-Age=2592000`); returns `{ ok: true }`
 - [x] `backend/functions/auth-refresh.ts` — reads cookie, POSTs to Cognito `/oauth2/token`, returns `{ access_token, expires_in }`; 401 on missing cookie or Cognito error
 - [x] `backend/functions/auth-logout.ts` — best-effort revoke via Cognito `/oauth2/revoke`; clears cookie (`Max-Age=0`); always returns 200
 
@@ -63,7 +63,7 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 - [x] `frontend/src/types/index.ts` — `Tier`, `AuthTokens`
 - [x] `frontend/vite.config.ts` — auto-detects mkcert certs for HTTPS
 
-**Verification:** Sign in → `/game`; `refresh_token` cookie has `HttpOnly`, `Secure`, `SameSite=Strict`; page reload re-authenticates silently; logout clears cookie and redirects to `/`.
+**Verification:** Sign in → `/game`; `refresh_token` cookie has `HttpOnly`, `Secure`, `SameSite=None`; page reload re-authenticates silently; logout clears cookie and redirects to `/`.
 
 ---
 

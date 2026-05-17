@@ -198,7 +198,7 @@ All read and write operations performed by the three Lambda functions are enumer
 `GetSnippet` and `SubmitAnswer` both read the Snippet item, but they have different security requirements:
 
 - **AP-4 (GetSnippet):** Must never expose `vulnerableLines` or `explanation`. The Lambda constructs its response object by explicitly selecting only safe attributes. It does **not** use a DynamoDB `ProjectionExpression` to hide the answer key — the full item is fetched internally — because the Lambda also needs `vulnerableLineCount` which is safe to return. The redaction is done in application code.
-- **AP-5 (SubmitAnswer):** Fetches the full item to compare `vulnerableLines` against the client submission, then returns only `explanation` and correctness in the response (not the raw `vulnerableLines` array, even after submission).
+- **AP-5 (SubmitAnswer):** Fetches the full item to compare `vulnerableLines` against the client submission. On a **correct** answer the response includes `vulnerableLines` and `explanation` so the frontend can show which lines were vulnerable and why. On an **incorrect** answer only the correctness result is returned — `vulnerableLines` and `explanation` are omitted so the user can try again without seeing the answer.
 
 ---
 
@@ -286,11 +286,11 @@ All Snippets must use one of the following `owaspCategory` values, corresponding
 | `A03_INJECTION` | Injection |
 | `A04_INSECURE_DESIGN` | Insecure Design |
 | `A05_SECURITY_MISCONFIGURATION` | Security Misconfiguration |
-| `A06_VULNERABLE_COMPONENTS` | Vulnerable and Outdated Components |
-| `A07_AUTH_FAILURES` | Identification and Authentication Failures |
-| `A08_DATA_INTEGRITY_FAILURES` | Software and Data Integrity Failures |
-| `A09_LOGGING_FAILURES` | Security Logging and Monitoring Failures |
-| `A10_SSRF` | Server-Side Request Forgery |
+| `A06_VULNERABLE_AND_OUTDATED_COMPONENTS` | Vulnerable and Outdated Components |
+| `A07_IDENTIFICATION_AND_AUTHENTICATION_FAILURES` | Identification and Authentication Failures |
+| `A08_SOFTWARE_AND_DATA_INTEGRITY_FAILURES` | Software and Data Integrity Failures |
+| `A09_SECURITY_LOGGING_AND_MONITORING_FAILURES` | Security Logging and Monitoring Failures |
+| `A10_SERVER_SIDE_REQUEST_FORGERY` | Server-Side Request Forgery |
 
 Validation is enforced by the loader script. Lambda functions trust the value stored in DynamoDB and do not re-validate it.
 
@@ -306,7 +306,7 @@ Validation is enforced by the loader script. Lambda functions trust the value st
 | `vulnerableLineCount` | Equals `len(vulnerableLines)` | Loader |
 | `explanation` | Non-empty string; Markdown permitted | Loader |
 | `contentKey` | Matches regex `^snippets/java/(beginner\|intermediate\|advanced)/[0-9a-f-]{36}\.java$` | Loader |
-| `timeTakenMs` (Attempt) | Integer; 0 ≤ value ≤ 3,600,000 | `SubmitAnswer` Lambda |
+| `timeTakenMs` (Attempt) | Integer; 0 ≤ value ≤ 600,000 (10 min cap; values above this are clamped, not rejected) | `SubmitAnswer` Lambda |
 | `submittedLines` (Attempt) | List of integers; length ≤ `vulnerableLineCount`; each value ≥ 1 | `SubmitAnswer` Lambda |
 | `userId` | UUID format (Cognito sub) | API Gateway JWT authorizer (implicit) |
 | `email` | Basic format check | Not re-validated; taken from JWT claim |
