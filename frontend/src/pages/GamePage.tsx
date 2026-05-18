@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/useAuth";
 import { CodeViewer } from "../components/CodeViewer";
+import { ErrorDisplay } from "../components/ErrorDisplay";
 import { ResultCard } from "../components/ResultCard";
+import { TierCompleteCard } from "../components/TierCompleteCard";
 import type {
   SnippetResponse,
   SubmitResponse,
@@ -14,7 +16,7 @@ import type {
 
 // ── State machine ────────────────────────────────────────────────────────────
 
-type GamePhase = "LOADING" | "PLAYING" | "SUBMITTING" | "RESULT" | "TIER_COMPLETE" | "ERROR";
+type GamePhase = "LOADING" | "PLAYING" | "SUBMITTING" | "RESULT" | "TIER_COMPLETE" | "ERROR" | "ALREADY_SUBMITTED";
 
 interface GameState {
   phase: GamePhase;
@@ -36,6 +38,7 @@ type GameAction =
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_SUCCESS"; result: SubmitResponse }
   | { type: "SUBMIT_ERROR"; message: string }
+  | { type: "ALREADY_SUBMITTED" }
   | { type: "NEXT" }
   | { type: "RETRY" };
 
@@ -86,6 +89,8 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, phase: "RESULT", result: action.result };
     case "SUBMIT_ERROR":
       return { ...state, phase: "ERROR", error: action.message };
+    case "ALREADY_SUBMITTED":
+      return { ...state, phase: "ALREADY_SUBMITTED" };
     case "NEXT":
       return { ...initialState, phase: "LOADING" };
     case "RETRY":
@@ -155,7 +160,12 @@ export function GamePage() {
       });
       dispatch({ type: "SUBMIT_SUCCESS", result });
     } catch (err: unknown) {
-      dispatch({ type: "SUBMIT_ERROR", message: String(err) });
+      const code = (err as { status?: number }).status;
+      if (code === 409) {
+        dispatch({ type: "ALREADY_SUBMITTED" });
+      } else {
+        dispatch({ type: "SUBMIT_ERROR", message: String(err) });
+      }
     }
   }
 
@@ -268,17 +278,28 @@ export function GamePage() {
 
       {/* Error */}
       {state.phase === "ERROR" && (
+        <ErrorDisplay
+          message={state.error ?? "Something went wrong."}
+          onRetry={() => loadSnippet()}
+          onSkip={() => loadSnippet()}
+        />
+      )}
+
+      {/* Already submitted */}
+      {state.phase === "ALREADY_SUBMITTED" && (
         <div
           style={{
-            background: "#3b0d0d",
-            border: "1px solid #ef4444",
+            background: "#1c1a08",
+            border: "1px solid #f59e0b",
             borderRadius: "0.5rem",
             padding: "1.5rem",
             textAlign: "center",
+            maxWidth: "480px",
+            margin: "4rem auto",
           }}
         >
-          <p style={{ color: "#ef4444", marginBottom: "1rem" }}>
-            {state.error ?? "Something went wrong."}
+          <p style={{ color: "#f59e0b", marginTop: 0, marginBottom: "1rem" }}>
+            This snippet was already submitted. Loading the next one…
           </p>
           <button
             onClick={() => loadSnippet()}
@@ -289,47 +310,17 @@ export function GamePage() {
               borderRadius: "0.375rem",
               padding: "0.5rem 1.25rem",
               cursor: "pointer",
+              fontWeight: 600,
             }}
           >
-            Retry
+            Next snippet
           </button>
         </div>
       )}
 
       {/* Tier Complete */}
       {state.phase === "TIER_COMPLETE" && state.tierComplete && (
-        <div
-          style={{
-            background: "#1e293b",
-            border: "1px solid #334155",
-            borderRadius: "0.5rem",
-            padding: "2rem",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🎓</div>
-          <h2 style={{ color: "#f1f5f9", marginBottom: "0.5rem" }}>Tier Complete!</h2>
-          <p style={{ color: "#94a3b8", marginBottom: "1.5rem" }}>
-            You've completed all snippets at the{" "}
-            <strong style={{ color: TIER_COLOURS[state.tierComplete.tier] }}>
-              {state.tierComplete.tier}
-            </strong>{" "}
-            level.
-          </p>
-          <Link
-            to="/progress"
-            style={{
-              background: "#3b82f6",
-              color: "white",
-              borderRadius: "0.375rem",
-              padding: "0.625rem 1.5rem",
-              textDecoration: "none",
-              fontWeight: 600,
-            }}
-          >
-            View progress
-          </Link>
-        </div>
+        <TierCompleteCard data={state.tierComplete} />
       )}
 
       {/* Game area */}

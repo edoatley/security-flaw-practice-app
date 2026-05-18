@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
+import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LandingPage } from "./pages/LandingPage";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
@@ -8,6 +9,7 @@ import { ProgressPage } from "./pages/ProgressPage";
 
 export default function App() {
   return (
+    <GlobalErrorBoundary>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
@@ -32,5 +34,6 @@ export default function App() {
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </GlobalErrorBoundary>
   );
 }

@@ -42,12 +42,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const onLoginSuccess = useCallback(
     async (accessToken: string, refreshToken: string, expiresIn: number) => {
       setAccessToken(accessToken);
-      await fetch(`${API_URL}/auth/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
+      // Best-effort: set the httpOnly refresh cookie. If this fails the user still
+      // gets a ~55 min session from the access token; silent refresh will fail at
+      // expiry and SESSION_EXPIRED will redirect them to login.
+      try {
+        await fetch(`${API_URL}/auth/session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+      } catch {
+        // non-fatal — access token is already in memory
+      }
       setIsAuthenticated(true);
       scheduleRefresh(expiresIn);
     },
