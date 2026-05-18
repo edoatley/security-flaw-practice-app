@@ -189,14 +189,14 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 
 ### Frontend
 
-- [ ] `frontend/src/components/ErrorDisplay.tsx` — distinguishes timeout / 5xx / 4xx; Retry re-fetches snippet; Skip re-fetches without recording attempt
-- [ ] `frontend/src/components/GlobalErrorBoundary.tsx` — catches render errors; static fallback with Reload button
-- [ ] `frontend/src/components/TierCompleteCard.tsx` — "You've completed all X snippets"; link to progress dashboard (currently inline in GamePage)
+- [x] `frontend/src/components/ErrorDisplay.tsx` — distinguishes timeout / 5xx / 4xx; Retry re-fetches snippet; Skip re-fetches without recording attempt
+- [x] `frontend/src/components/GlobalErrorBoundary.tsx` — catches render errors; static fallback with Reload button
+- [x] `frontend/src/components/TierCompleteCard.tsx` — "You've completed all X snippets"; link to progress dashboard
 - [x] `AuthCallbackPage` — handle `?error=` from Cognito (user cancelled) → "Login failed" + retry link
 - [x] `AuthCallbackPage` — CSRF state mismatch → redirect to `/`
-- [ ] `AuthCallbackPage` — `/auth/session` failure → allow session for access token lifetime (55 min) then require re-login
+- [x] `AuthCallbackPage` — `/auth/session` failure → allow session for access token lifetime (55 min) then require re-login
 - [x] `SubmitButton` disabled after first click (client guard; backend `TransactWriteItems` is authoritative)
-- [ ] 409 response → "Already submitted" message (no crash; currently falls into generic ERROR state)
+- [x] 409 response → "Already submitted" message (no crash; currently falls into generic ERROR state)
 - [x] `SelectionSummary` at cap → "Maximum lines selected (N/N). Deselect a line to change your answer."
 - [x] `ProtectedRoute` — awaits one `POST /auth/refresh` attempt before redirecting; shows blank during wait
 
