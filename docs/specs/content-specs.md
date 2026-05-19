@@ -57,23 +57,23 @@ The snippet loader shall reject any `metadata.json` entry whose `difficulty` fie
 
 ## 3. owaspCategory Enum Constraint
 
-**CONTENT-010** `[ ]`
-The snippet loader shall reject any `metadata.json` entry whose `owaspCategory` field is not exactly one of the following ten canonical OWASP Top 10 2021 values:
+**CONTENT-010** `[x]`
+The snippet loader shall reject any `metadata.json` entry whose `owaspCategory` field is not exactly one of the following ten underscore-enum values:
 
 | Value | OWASP 2021 Name |
 |-------|----------------|
-| `A01:2021-Broken_Access_Control` | Broken Access Control |
-| `A02:2021-Cryptographic_Failures` | Cryptographic Failures |
-| `A03:2021-Injection` | Injection |
-| `A04:2021-Insecure_Design` | Insecure Design |
-| `A05:2021-Security_Misconfiguration` | Security Misconfiguration |
-| `A06:2021-Vulnerable_and_Outdated_Components` | Vulnerable and Outdated Components |
-| `A07:2021-Identification_and_Authentication_Failures` | Identification and Authentication Failures |
-| `A08:2021-Software_and_Data_Integrity_Failures` | Software and Data Integrity Failures |
-| `A09:2021-Security_Logging_and_Monitoring_Failures` | Security Logging and Monitoring Failures |
-| `A10:2021-Server-Side_Request_Forgery` | Server-Side Request Forgery |
+| `A01_BROKEN_ACCESS_CONTROL` | Broken Access Control |
+| `A02_CRYPTOGRAPHIC_FAILURES` | Cryptographic Failures |
+| `A03_INJECTION` | Injection |
+| `A04_INSECURE_DESIGN` | Insecure Design |
+| `A05_SECURITY_MISCONFIGURATION` | Security Misconfiguration |
+| `A06_VULNERABLE_AND_OUTDATED_COMPONENTS` | Vulnerable and Outdated Components |
+| `A07_IDENTIFICATION_AND_AUTHENTICATION_FAILURES` | Identification and Authentication Failures |
+| `A08_SOFTWARE_AND_DATA_INTEGRITY_FAILURES` | Software and Data Integrity Failures |
+| `A09_SECURITY_LOGGING_AND_MONITORING_FAILURES` | Security Logging and Monitoring Failures |
+| `A10_SERVER_SIDE_REQUEST_FORGERY` | Server-Side Request Forgery |
 
-> **Note — format conflict (see Consistency Report §A):** `snippet-loader.md` uses colon-and-hyphen notation (e.g. `A03:2021-Injection`); `data-model.md` uses underscore-enum notation (e.g. `A03_INJECTION`). The values above follow `snippet-loader.md` as the primary source for this field. This conflict must be resolved before implementation.
+> **Resolved:** The format conflict between `snippet-loader.md` (colon-and-hyphen) and `data-model.md` (underscore-enum) is resolved in favour of underscore-enum, which is the format used throughout the implementation, seeder script, and existing snippet data. See Consistency Report §A (removed).
 
 ---
 
@@ -223,13 +223,9 @@ When AWS credentials cannot be resolved at session initialisation time, the snip
 
 ## Consistency Report
 
-### A. owaspCategory Value Format Conflict
+### A. owaspCategory Value Format — Resolved
 
-**Documents in conflict:** `snippet-loader.md` §2.2 example and §2.3 list vs. `data-model.md` §7.1 table.
-
-`snippet-loader.md` uses colon-and-hyphen notation aligned with the OWASP 2021 official identifiers (e.g. `A03:2021-Injection`, `A01:2021-Broken_Access_Control`). `data-model.md` uses a compact underscore-enum notation (e.g. `A03_INJECTION`, `A01_BROKEN_ACCESS_CONTROL`). These two sets of strings are mutually incompatible: a loader validating against one will reject values intended for the other, and a DynamoDB `owaspCategory` value written by the loader cannot be matched by any GSI or Lambda that expects the other format.
-
-**Recommendation:** Agree on a single canonical format before writing any code. The OWASP official notation from `snippet-loader.md` is adopted in CONTENT-010 because that document owns the loader input schema; however, `data-model.md` must be updated to match, or vice versa.
+The format conflict between `snippet-loader.md` (colon-and-hyphen) and `data-model.md` (underscore-enum) is resolved. The underscore-enum format (`A03_INJECTION`) is canonical throughout the implementation: `metadata.json`, the seeder script, DynamoDB, and all Lambda code use this format. `data-model.md` §7.1 and `snippet-loader.md` should be updated to reflect this if not already done.
 
 ---
 
