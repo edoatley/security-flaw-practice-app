@@ -14,6 +14,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Dynamo"
     }
+    "ComputeMedians": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "UserPool": {
       "id": string
       "type": "sst.aws.CognitoUserPool"

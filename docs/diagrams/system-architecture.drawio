@@ -1,0 +1,231 @@
+<mxfile host="app.diagrams.net" modified="2026-05-19T00:00:00.000Z" agent="Claude" version="21.0.0" type="device">
+  <diagram id="system-architecture" name="System Architecture">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══════════════════════════════════════════════════════
+             SWIMLANE LABELS
+             ═══════════════════════════════════════════════════════ -->
+
+        <!-- Public Internet label -->
+        <mxCell id="zone-public" value="Public Internet" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=14;fontStyle=1;fontColor=#006EAF;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- AWS Cloud boundary -->
+        <mxCell id="aws-boundary" value="AWS eu-west-2" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#232F3E;fillColor=#FFFFFF;verticalLabelPosition=top;verticalAlign=bottom;align=center;html=1;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="70" width="1400" height="1050" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             USER / BROWSER
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="user" value="User Browser" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.general;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="30" y="200" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="user-label" value="User Browser" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="10" y="265" width="100" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             CLOUDFRONT SPA
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="cf-spa-group" value="SPA Delivery" style="swimlane;fontStyle=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="270" y="130" width="230" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="cf-spa" value="CloudFront Distribution&#xa;(SPA Frontend)&#xa;&#xa;• Security Headers Policy&#xa;  (CSP, HSTS, X-Frame-Options)&#xa;• Redirect HTTP→HTTPS&#xa;• d34cxgc9obzwga.cloudfront.net" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="cf-spa-group">
+          <mxGeometry x="20" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-spa" value="S3 Bucket&#xa;(React Build)&#xa;&#xa;• Block all public access&#xa;• Served via OAI" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="cf-spa-group">
+          <mxGeometry x="140" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             COGNITO
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="cognito-group" value="Authentication" style="swimlane;fontStyle=1;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="270" y="370" width="230" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="cognito" value="Cognito User Pool&#xa;&#xa;• PKCE / Hosted UI&#xa;• eu-west-2_VVP8q00KT&#xa;• sfpa-793976-&lt;stage&gt;" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cognito;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="cognito-group">
+          <mxGeometry x="20" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cognito-hostedui" value="Hosted UI&#xa;/authorize&#xa;/token&#xa;/logout" style="shape=mxgraph.aws4.traditional_server;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="cognito-group">
+          <mxGeometry x="150" y="40" width="50" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             API GATEWAY
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="apigw-group" value="API Layer" style="swimlane;fontStyle=1;fontSize=11;fillColor=#ffe6cc;strokeColor=#d6b656;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="590" y="130" width="280" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="apigw" value="API Gateway v2&#xa;(HTTP API)&#xa;&#xa;• JWT Authorizer (Cognito)&#xa;• CORS configured&#xa;• 0itsetefp0.execute-api&#xa;  .eu-west-2.amazonaws.com" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.api_gateway;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="apigw-group">
+          <mxGeometry x="100" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="route-protected" value="JWT-Protected Routes&#xa;GET /api/snippet&#xa;POST /api/answer&#xa;GET /api/progress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="apigw-group">
+          <mxGeometry x="20" y="150" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="route-auth" value="Open Routes&#xa;POST /auth/session&#xa;POST /auth/refresh&#xa;POST /auth/logout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="apigw-group">
+          <mxGeometry x="150" y="150" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             LAMBDA FUNCTIONS
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="lambda-group" value="Lambda Functions (Node 22, arm64)" style="swimlane;fontStyle=1;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="960" y="130" width="460" height="600" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-getsnippet" value="GetSnippet&#xa;GET /api/snippet&#xa;256 MB / 10s&#xa;&#xa;1. Get user profile (currentTier)&#xa;2. Query GSI1 by DIFFICULTY#tier&#xa;3. Exclude last 5 snippets&#xa;4. Random pick&#xa;5. Return contentUrl (CF signed)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="30" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-submitanswer" value="SubmitAnswer&#xa;POST /api/answer&#xa;256 MB / 10s&#xa;&#xa;1. Validate body&#xa;2. Clamp timeTakenMs to 600k&#xa;3. Check correctness&#xa;4. Compute rolling score&#xa;5. TransactWriteItems (atomic)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="170" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-getprogress" value="GetProgress&#xa;GET /api/progress&#xa;256 MB / 10s&#xa;&#xa;1. Fetch profile + attempts&#xa;2. computeCompositeScore&#xa;3. Forward-sim upgrades&#xa;4. Return rolling window" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="310" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-authsession" value="AuthSession&#xa;POST /auth/session&#xa;128 MB / 10s&#xa;&#xa;Receives refresh_token in body&#xa;→ Sets httpOnly cookie&#xa;   SameSite=None; Secure&#xa;   Path=/auth; Max-Age=30d" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="30" y="320" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-authrefresh" value="AuthRefresh&#xa;POST /auth/refresh&#xa;128 MB / 10s&#xa;&#xa;Reads cookie → calls&#xa;Cognito /oauth2/token&#xa;(grant_type=refresh_token)&#xa;→ Returns new access_token" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="170" y="320" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-authlogout" value="AuthLogout&#xa;POST /auth/logout&#xa;128 MB / 10s&#xa;&#xa;Reads cookie → revokes via&#xa;Cognito /oauth2/revoke&#xa;→ Clears cookie (Max-Age=0)&#xa;→ Always 200" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="310" y="320" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fn-computemedians" value="ComputeMedians&#xa;EventBridge Cron (24h)&#xa;256 MB / 5 min&#xa;&#xa;Scan all ATTEMPT# records&#xa;Filter: 3000≤ms≤600000&#xa;Compute median per tier&#xa;→ Write CONFIG#SPEED_MEDIANS" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelBackgroundColor=none;sketch=0;html=1;fontSize=9;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="lambda-group">
+          <mxGeometry x="170" y="490" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             DYNAMODB
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="dynamo-group" value="Data Store" style="swimlane;fontStyle=1;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="960" y="780" width="460" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="dynamo" value="DynamoDB&#xa;Single-Table Design&#xa;&#xa;PK patterns:&#xa;• SNIPPET#&lt;uuid&gt; / METADATA&#xa;• USER#&lt;id&gt; / PROFILE&#xa;• USER#&lt;id&gt; / ATTEMPT#&lt;ts&gt;#&lt;id&gt;&#xa;• CONFIG#SPEED_MEDIANS / V0&#xa;• CONFIG#ALGO_PARAMS / V0&#xa;&#xa;GSI1: DIFFICULTY#&lt;tier&gt; → snippet queries&#xa;Billing: on-demand (PAY_PER_REQUEST)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="dynamo-group">
+          <mxGeometry x="190" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             SNIPPET CDN
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="snippet-cdn-group" value="Snippet Content Delivery" style="swimlane;fontStyle=1;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;startSize=25;" vertex="1" parent="1">
+          <mxGeometry x="590" y="600" width="300" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="cf-snippet" value="CloudFront Distribution&#xa;(Snippet Content)&#xa;&#xa;• CORS Policy (allow *)&#xa;• OAC restricts S3 access&#xa;• drcxs06o68yvn.cloudfront.net" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="snippet-cdn-group">
+          <mxGeometry x="20" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-snippets" value="S3 Snippet Bucket&#xa;(snippetbucket-c7b1918)&#xa;&#xa;• Block all public access&#xa;• OAC signed requests only&#xa;• forceDestroy=true (non-prod)&#xa;• Content-Type: text/plain" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="snippet-cdn-group">
+          <mxGeometry x="170" y="35" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             EVENTBRIDGE
+             ═══════════════════════════════════════════════════════ -->
+        <mxCell id="eventbridge" value="EventBridge&#xa;Cron Rule&#xa;rate(24 hours)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.eventbridge;labelBackgroundColor=none;sketch=0;html=1;fontSize=10;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="750" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════
+             EDGES / CONNECTIONS
+             ═══════════════════════════════════════════════════════ -->
+
+        <!-- User → CloudFront SPA -->
+        <mxCell id="e1" value="HTTPS&#xa;(SPA)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="user" target="cf-spa-group" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CloudFront SPA → S3 SPA -->
+        <mxCell id="e2" value="OAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="cf-spa" target="s3-spa" parent="cf-spa-group">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- User → API Gateway (game + auth calls) -->
+        <mxCell id="e3" value="HTTPS&#xa;(API calls + JWT)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" edge="1" source="user" target="apigw-group" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- User → Cognito Hosted UI (PKCE) -->
+        <mxCell id="e4" value="PKCE redirect&#xa;/authorize" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;" edge="1" source="user" target="cognito-group" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- API Gateway → Lambda (game routes) -->
+        <mxCell id="e5" value="invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="route-protected" target="fn-getsnippet" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="route-protected" target="fn-submitanswer" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="route-protected" target="fn-getprogress" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="route-auth" target="fn-authsession" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="route-auth" target="fn-authrefresh" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="route-auth" target="fn-authlogout" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Lambda → DynamoDB -->
+        <mxCell id="e11" value="read/write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="fn-getsnippet" target="dynamo" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="TransactWrite" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="fn-submitanswer" target="dynamo" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="read" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="fn-getprogress" target="dynamo" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="scan+write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="fn-computemedians" target="dynamo" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Auth Lambdas → Cognito -->
+        <mxCell id="e15" value="/token&#xa;/revoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;" edge="1" source="fn-authrefresh" target="cognito" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="/revoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;" edge="1" source="fn-authlogout" target="cognito" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- API Gateway → Cognito (JWT validation) -->
+        <mxCell id="e17" value="JWT verify&#xa;(JWKS)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;strokeColor=#82b366;" edge="1" source="apigw" target="cognito" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- GetSnippet returns contentUrl → Browser fetches from snippet CDN -->
+        <mxCell id="e18" value="contentUrl&#xa;(pre-signed CF URL)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6c8ebf;" edge="1" source="fn-getsnippet" target="cf-snippet" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="fetch(contentUrl)&#xa;HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6c8ebf;dashed=1;" edge="1" source="user" target="snippet-cdn-group" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Snippet CDN → S3 -->
+        <mxCell id="e20" value="OAC&#xa;(sigv4)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;" edge="1" source="cf-snippet" target="s3-snippets" parent="snippet-cdn-group">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- EventBridge → ComputeMedians -->
+        <mxCell id="e21" value="rate(24 hours)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d6b656;" edge="1" source="eventbridge" target="fn-computemedians" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

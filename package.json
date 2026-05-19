@@ -4,7 +4,8 @@
   "description": "Security vulnerability education platform",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts"
   },
   "keywords": [],
   "author": "edoatley",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@types/aws-lambda": "8.10.161",
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
   }
 }

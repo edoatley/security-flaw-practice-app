@@ -1,0 +1,268 @@
+<mxfile host="app.diagrams.net" modified="2026-05-19T00:00:00.000Z" agent="Claude" version="21.0.0" type="device">
+  <diagram id="auth-game-sequence" name="Auth and Game Loop Sequence">
+    <mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══════════════ TITLE ═══════════════ -->
+        <mxCell id="title" value="Security Flaw Practice App — Auth &amp; Game Loop Sequence" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="10" width="1200" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════ LIFELINE HEADERS ═══════════════ -->
+        <mxCell id="lh-user"     value="User / Browser" style="shape=mxgraph.flowchart.start_2;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60"   y="60" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh-spa"      value="React SPA&#xa;(Frontend)" style="shape=mxgraph.flowchart.start_2;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="260"  y="60" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh-cognito"  value="Cognito&#xa;Hosted UI" style="shape=mxgraph.flowchart.start_2;fillColor=#ffe6cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460"  y="60" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh-apigw"    value="API Gateway v2&#xa;(JWT Authorizer)" style="shape=mxgraph.flowchart.start_2;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="660"  y="60" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh-lambda"   value="Lambda&#xa;Functions" style="shape=mxgraph.flowchart.start_2;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="880"  y="60" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh-dynamo"   value="DynamoDB" style="shape=mxgraph.flowchart.start_2;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="60" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lh-cf"       value="CloudFront&#xa;(Snippets)" style="shape=mxgraph.flowchart.start_2;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="60" width="110" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════ LIFELINES (vertical dashed) ═══════════════ -->
+        <mxCell id="ll-user"    value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="115" y="100"/><mxPoint x="115" y="2160"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ll-spa"     value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="315" y="100"/><mxPoint x="315" y="2160"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ll-cognito" value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="515" y="100"/><mxPoint x="515" y="2160"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ll-apigw"   value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="725" y="100"/><mxPoint x="725" y="2160"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ll-lambda"  value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="935" y="100"/><mxPoint x="935" y="2160"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ll-dynamo"  value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1135" y="100"/><mxPoint x="1135" y="2160"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="ll-cf"      value="" style="endArrow=none;dashed=1;edgeStyle=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1335" y="100"/><mxPoint x="1335" y="2160"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- ═══════════════ SECTION 1: PKCE LOGIN ═══════════════ -->
+        <mxCell id="s1-box" value="① PKCE Login Flow" style="swimlane;startSize=20;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="115" width="1380" height="370" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1-1" value="Open https://&lt;spa&gt;/ → LandingPage" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="65" y="40"/><mxPoint x="265" y="40"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-2" value="Generate code_verifier, code_challenge (SHA-256)&#xa;Store state + verifier in sessionStorage" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s1-box">
+          <mxGeometry x="185" y="55" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="s1-3" value="Redirect: /authorize?response_type=code&#xa;&amp;code_challenge=...&amp;state=...&amp;client_id=..." style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="65" y="100"/><mxPoint x="465" y="100"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-4" value="User enters email + password" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s1-box">
+          <mxGeometry x="435" y="115" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s1-5" value="Redirect: /auth/callback?code=...&amp;state=..." style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="465" y="145"/><mxPoint x="65" y="145"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-6" value="Validate state (sessionStorage); extract code" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s1-box">
+          <mxGeometry x="185" y="160" width="280" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s1-7" value="POST /oauth2/token (code + code_verifier)" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="190"/><mxPoint x="465" y="190"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-8" value="{access_token, refresh_token, expires_in: 3600}" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;dashed=1;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="465" y="215"/><mxPoint x="265" y="215"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-9" value="setAccessToken(access_token) → memory" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s1-box">
+          <mxGeometry x="185" y="230" width="280" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s1-10" value="POST /auth/session {refresh_token}" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="260"/><mxPoint x="675" y="260"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-11" value="AuthSession Lambda: Set-Cookie: refresh_token=...;&#xa;HttpOnly; Secure; SameSite=None; Path=/auth" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;dashed=1;" edge="1" parent="s1-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="290"/><mxPoint x="265" y="290"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s1-12" value="navigate('/game')" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s1-box">
+          <mxGeometry x="185" y="305" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s1-13" value="Schedule proactive refresh timer at T−5min" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s1-box">
+          <mxGeometry x="185" y="330" width="300" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════ SECTION 2: GAME LOOP ═══════════════ -->
+        <mxCell id="s2-box" value="② Game Loop (Fetch → Play → Submit → Result)" style="swimlane;startSize=20;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="500" width="1380" height="670" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2-1" value="Mount GamePage → dispatch LOAD_START" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="185" y="35" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-2" value="GET /api/snippet  (Authorization: Bearer &lt;access_token&gt;)" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="65"/><mxPoint x="675" y="65"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-2b" value="Verify JWT (JWKS)" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="85"/><mxPoint x="885" y="85"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-3" value="GetItem USER#{userId}/PROFILE (lazy create BEGINNER)" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="105"/><mxPoint x="1085" y="105"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-4" value="Query GSI1 DIFFICULTY#BEGINNER (tier=currentTier)" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="125"/><mxPoint x="1085" y="125"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-5" value="Query last 5 attempts for exclusion set" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="145"/><mxPoint x="1085" y="145"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-6" value="{snippetId, title, difficulty, owaspCategory,&#xa; lineCount, vulnerableLineCount, contentUrl}" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;dashed=1;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="175"/><mxPoint x="265" y="175"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-7" value="fetch(contentUrl) — no auth needed" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="205"/><mxPoint x="1285" y="205"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-8" value="raw Java source text (text/plain)" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;dashed=1;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1285" y="225"/><mxPoint x="265" y="225"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-9" value="dispatch LOAD_SUCCESS → phase: PLAYING" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="185" y="240" width="300" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2-10" value="User clicks line N (≤ vulnerableLineCount times)" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="35" y="275" width="320" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-11" value="TOGGLE_LINE → update selectedLines (client-only)" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="185" y="300" width="320" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2-12" value="User clicks Submit → dispatch SUBMIT_START" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="35" y="330" width="320" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-13" value="POST /api/answer  {snippetId, selectedLines, timeTakenMs}" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="360"/><mxPoint x="675" y="360"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-14" value="Validate body; clamp timeTakenMs to 600,000" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="755" y="375" width="310" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-15" value="GetItem SNIPPET#{id} + USER#{userId}/PROFILE" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="400"/><mxPoint x="1085" y="400"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-16" value="Check selectedLines set-equality vs vulnerableLines" style="text;html=1;fontSize=10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="755" y="420" width="310" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-17" value="Query last 20 attempts + GetItem CONFIG#SPEED_MEDIANS" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="445"/><mxPoint x="1085" y="445"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-18" value="computeCompositeScore(0.70×correctRate + 0.30×speedScore)" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="755" y="460" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-19" value="TransactWriteItems: PutItem attempt (conditional SK) + UpdateItem profile" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="490"/><mxPoint x="1085" y="490"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-20" value="{correct, score, tierChange&#xa; + snippet:{vulnerableLines, explanation} if correct}" style="edgeStyle=orthogonalEdgeStyle;fontSize=10;dashed=1;" edge="1" parent="s2-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="520"/><mxPoint x="265" y="520"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s2-21" value="dispatch SUBMIT_SUCCESS → phase: RESULT" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="185" y="540" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-22" value="Show ResultCard. If correct → 'Next'; if wrong → 'Try Again'" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="35" y="565" width="400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-23" value="If correct: dispatch NEXT → loop to ①" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s2-box">
+          <mxGeometry x="185" y="590" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2-24" value="If 409 received: dispatch ALREADY_SUBMITTED → load next" style="text;html=1;fontSize:10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="s2-box">
+          <mxGeometry x="185" y="615" width="360" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════ SECTION 3: SILENT REFRESH ═══════════════ -->
+        <mxCell id="s3-box" value="③ Silent Token Refresh (55 min timer fires)" style="swimlane;startSize=20;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1185" width="1380" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3-1" value="Proactive refresh timer fires at T−5 min" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s3-box">
+          <mxGeometry x="185" y="35" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-2" value="POST /auth/refresh  (cookie auto-attached by browser)" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s3-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="65"/><mxPoint x="675" y="65"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s3-3" value="AuthRefresh Lambda → POST Cognito /oauth2/token (grant_type=refresh_token)" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s3-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="85"/><mxPoint x="465" y="85"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s3-4" value="{access_token, expires_in}" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;dashed=1;" edge="1" parent="s3-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="110"/><mxPoint x="265" y="110"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s3-5" value="setAccessToken(new_token) → memory; reschedule timer" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s3-box">
+          <mxGeometry x="185" y="130" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s3-6" value="If refresh 401: dispatch SESSION_EXPIRED → clear token → redirect to /" style="text;html=1;fontSize:10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="s3-box">
+          <mxGeometry x="185" y="155" width="400" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════ SECTION 4: LOGOUT ═══════════════ -->
+        <mxCell id="s4-box" value="④ Logout" style="swimlane;startSize=20;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1400" width="1380" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4-1" value="User clicks Sign Out" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s4-box">
+          <mxGeometry x="35" y="35" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s4-2" value="setAccessToken(null); clearTimeout(timer)" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s4-box">
+          <mxGeometry x="185" y="35" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s4-3" value="POST /auth/logout  (cookie auto-attached)" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s4-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="265" y="65"/><mxPoint x="675" y="65"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s4-4" value="AuthLogout: revoke token via Cognito /oauth2/revoke" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s4-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="85"/><mxPoint x="465" y="85"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s4-5" value="Set-Cookie: refresh_token=; Max-Age=0  (clear cookie)" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;dashed=1;" edge="1" parent="s4-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="110"/><mxPoint x="265" y="110"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s4-6" value="window.location.href = Cognito /logout?client_id=...&amp;logout_uri=/" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s4-box">
+          <mxGeometry x="185" y="130" width="400" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s4-7" value="Redirect to /logout?..." style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s4-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="65" y="155"/><mxPoint x="465" y="155"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s4-8" value="Redirect back to logout_uri (/)" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;dashed=1;" edge="1" parent="s4-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="465" y="180"/><mxPoint x="65" y="180"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- ═══════════════ SECTION 5: COMPUTE MEDIANS ═══════════════ -->
+        <mxCell id="s5-box" value="⑤ Nightly Speed Median Computation (EventBridge Cron)" style="swimlane;startSize=20;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1635" width="1380" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s5-1" value="EventBridge fires rate(24 hours)" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s5-box">
+          <mxGeometry x="755" y="35" width="250" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s5-2" value="Invoke ComputeMedians Lambda" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s5-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="675" y="65"/><mxPoint x="885" y="65"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s5-3" value="Paginated Scan: SK begins_with 'ATTEMPT#'" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s5-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="90"/><mxPoint x="1085" y="90"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s5-4" value="Filter timeTakenMs ∈ [3000, 600000]; compute per-tier medians" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s5-box">
+          <mxGeometry x="755" y="110" width="390" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s5-5" value="PutItem CONFIG#SPEED_MEDIANS/V0 (medians + sampleSizes + computedAt)" style="edgeStyle=orthogonalEdgeStyle;fontSize:10;" edge="1" parent="s5-box">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="885" y="135"/><mxPoint x="1085" y="135"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="s5-6" value="Next SubmitAnswer reads new medians after 5-min Lambda cache TTL" style="text;html=1;fontSize:10;fillColor=#ffffc0;strokeColor=#999999;" vertex="1" parent="s5-box">
+          <mxGeometry x="755" y="160" width="420" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -25,22 +25,11 @@ export const handler = async (
 ): Promise<APIGatewayProxyResultV2> => {
   const userId = event.requestContext.authorizer.jwt.claims["sub"] as string;
 
-  const [profileRes, attemptsRes, mediansRes] = await Promise.all([
+  const [profileRes, mediansRes] = await Promise.all([
     docClient.send(
       new GetCommand({
         TableName: tableName,
         Key: { PK: `USER#${userId}`, SK: "PROFILE" },
-      })
-    ),
-    docClient.send(
-      new QueryCommand({
-        TableName: tableName,
-        KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
-        ExpressionAttributeValues: { ":pk": `USER#${userId}`, ":prefix": "ATTEMPT#" },
-        ScanIndexForward: false,
-        Limit: 20,
-        ProjectionExpression: "snippetId, correct, timeTakenMs, tierId, #ts",
-        ExpressionAttributeNames: { "#ts": "timestamp" },
       })
     ),
     docClient.send(
@@ -57,7 +46,31 @@ export const handler = async (
 
   const profile = profileRes.Item;
   const currentTier = profile.currentTier as Tier;
-  const window = ((attemptsRes.Items ?? []) as AttemptRecord[]).reverse();
+  const lastTransitionTimestamp = (profile.lastTransitionTimestamp as string) ?? "0";
+
+  // Query attempts at the current tier since the last tier transition — mirrors the
+  // rolling-window logic in submit-answer.ts so windowSize stays consistent.
+  const attemptsRes = await docClient.send(
+    new QueryCommand({
+      TableName: tableName,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
+      FilterExpression: "tierId = :tier AND #ts > :lastTransition",
+      ExpressionAttributeValues: {
+        ":pk": `USER#${userId}`,
+        ":prefix": "ATTEMPT#",
+        ":tier": currentTier,
+        ":lastTransition": lastTransitionTimestamp,
+      },
+      ExpressionAttributeNames: { "#ts": "timestamp" },
+      ScanIndexForward: false,
+      Limit: 100,
+      ProjectionExpression: "snippetId, correct, timeTakenMs, tierId, #ts",
+    })
+  );
+
+  const window = ((attemptsRes.Items ?? []) as AttemptRecord[])
+    .reverse()
+    .slice(-DEFAULT_ALGO_PARAMS.tierUpWindow);
 
   const medians: SpeedMedians = mediansRes.Item
     ? {

@@ -84,6 +84,8 @@ export default $config({
           args.explicitAuthFlows = [
             "ALLOW_USER_SRP_AUTH",
             "ALLOW_REFRESH_TOKEN_AUTH",
+            // Allow direct username/password auth in non-production stages for e2e tests
+            ...(!isProd ? ["ALLOW_USER_PASSWORD_AUTH"] : []),
           ];
         },
       },
@@ -179,7 +181,7 @@ export default $config({
               $interpolate`https://${$app.stage}.secure-train.edoatley.co.uk`,
             ],
         allowMethods: ["GET", "POST"],
-        allowHeaders: ["Authorization", "Content-Type"],
+        allowHeaders: ["Authorization", "Content-Type", "Cookie"],
         allowCredentials: true,
       },
     });
