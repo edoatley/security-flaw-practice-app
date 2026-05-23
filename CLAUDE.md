@@ -137,7 +137,7 @@ python load_snippets.py \
   --snippets-dir snippets/ \
   --bucket <bucket-name> \
   --table <table-name> \
-  --region eu-west-1 \
+  --region eu-west-2 \
   [--dry-run]
 ```
 
