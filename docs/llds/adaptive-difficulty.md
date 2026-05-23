@@ -280,13 +280,14 @@ A dedicated DynamoDB item in the Users table (or a Config table if one is added)
 
 | Attribute | Value |
 |---|---|
-| PK | `CONFIG` |
-| SK | `SPEED_MEDIANS` |
-| `medianBeginner` | Number (ms) |
-| `medianIntermediate` | Number (ms) |
-| `medianAdvanced` | Number (ms) |
-| `computedAt` | ISO-8601 timestamp |
-| `sampleSizes` | Map: `{BEGINNER: N, INTERMEDIATE: N, ADVANCED: N}` |
+| PK | `CONFIG#SPEED_MEDIANS` |
+| SK | `V0` |
+| `value.BEGINNER` | Number (ms) — median for BEGINNER tier |
+| `value.INTERMEDIATE` | Number (ms) — median for INTERMEDIATE tier |
+| `value.ADVANCED` | Number (ms) — median for ADVANCED tier |
+| `value.sampleSizes` | Map: `{BEGINNER: N, INTERMEDIATE: N, ADVANCED: N}` |
+| `value.computedAt` | ISO-8601 timestamp |
+| `updatedAt` | ISO-8601 timestamp |
 
 The `sampleSizes` attribute records how many valid attempts were used to compute each median. This is used to decide whether the data is sufficient (see Section 5.4).
 

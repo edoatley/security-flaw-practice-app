@@ -22,35 +22,35 @@
 
 ## 1. metadata.json Required Fields
 
-**CONTENT-001** `[ ]`
+**CONTENT-001** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include a `snippetId` field containing a non-empty, valid UUID v4 string.
 
-**CONTENT-002** `[ ]`
+**CONTENT-002** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include a `title` field containing between 1 and 120 characters (inclusive).
 
-**CONTENT-003** `[ ]`
+**CONTENT-003** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include a `file` field containing a non-empty string ending with `.java`.
 
-**CONTENT-004** `[ ]`
+**CONTENT-004** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include a `difficulty` field.
 
-**CONTENT-005** `[ ]`
+**CONTENT-005** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include an `owaspCategory` field.
 
-**CONTENT-006** `[ ]`
+**CONTENT-006** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include a `vulnerableLines` field.
 
-**CONTENT-007** `[ ]`
+**CONTENT-007** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include an `explanation` field containing between 1 and 2000 characters (inclusive).
 
-**CONTENT-008** `[ ]`
+**CONTENT-008** `[x]`
 The snippet loader shall reject any `metadata.json` entry that does not include a `source` field containing between 1 and 300 characters (inclusive).
 
 ---
 
 ## 2. difficulty Enum Constraint
 
-**CONTENT-009** `[ ]`
+**CONTENT-009** `[x]`
 The snippet loader shall reject any `metadata.json` entry whose `difficulty` field is not exactly one of the following values: `BEGINNER`, `INTERMEDIATE`, `ADVANCED`.
 
 ---
@@ -79,36 +79,36 @@ The snippet loader shall reject any `metadata.json` entry whose `owaspCategory` 
 
 ## 4. vulnerableLines Line-Number Validity
 
-**CONTENT-011** `[ ]`
+**CONTENT-011** `[x]`
 The snippet loader shall reject any `metadata.json` entry whose `vulnerableLines` field is not a non-empty array of integers.
 
-**CONTENT-012** `[ ]`
+**CONTENT-012** `[x]`
 The snippet loader shall reject any `metadata.json` entry that contains a `vulnerableLines` array with duplicate integer values.
 
-**CONTENT-013** `[ ]`
+**CONTENT-013** `[x]`
 The snippet loader shall reject any `metadata.json` entry that contains a `vulnerableLines` value less than 1.
 
-**CONTENT-014** `[ ]`
+**CONTENT-014** `[x]`
 When validating a snippet entry, the snippet loader shall read the `.java` file identified by the `file` field and shall reject the entry if any value in `vulnerableLines` exceeds the total number of lines in that file.
 
 ---
 
 ## 5. vulnerableLineCount is Loader-Computed
 
-**CONTENT-015** `[ ]`
+**CONTENT-015** `[x]`
 The snippet loader shall compute the `vulnerableLineCount` attribute as `len(vulnerableLines)` and shall write this computed value to DynamoDB; `vulnerableLineCount` shall not be read from `metadata.json`.
 
-**CONTENT-016** `[ ]`
+**CONTENT-016** `[x]`
 The data model shall store `vulnerableLineCount` as a DynamoDB Number attribute on every Snippet item.
 
 ---
 
 ## 6. contentKey is Loader-Computed
 
-**CONTENT-017** `[ ]`
+**CONTENT-017** `[x]`
 The snippet loader shall compute the `contentKey` attribute as `snippets/java/<difficulty_lowercase>/<snippetId>.java` — where `<difficulty_lowercase>` is the lowercase form of the `difficulty` value and `<snippetId>` is the UUID from `metadata.json` — and shall write this computed value to DynamoDB; `contentKey` shall not be read from `metadata.json`.
 
-**CONTENT-018** `[ ]`
+**CONTENT-018** `[x]`
 The snippet loader shall ensure that every `contentKey` value written to DynamoDB matches the regular expression `^snippets/java/(beginner|intermediate|advanced)/[0-9a-f-]{36}\.java$`.
 
 > **Note — conflict with snippet-loader.md (see Consistency Report §B):** `snippet-loader.md` §6 and §12.3 specify the flat key format `snippets/{snippetId}.java`, whereas `data-model.md` §6.2 specifies the hierarchical format `snippets/java/<difficulty_lowercase>/<snippetId>.java`. CONTENT-017 and CONTENT-018 adopt the hierarchical format from `data-model.md` as it is the more detailed authoritative data-model document. This conflict must be resolved before implementation.
@@ -117,37 +117,37 @@ The snippet loader shall ensure that every `contentKey` value written to DynamoD
 
 ## 7. Validate-All-First
 
-**CONTENT-019** `[ ]`
+**CONTENT-019** `[x]`
 The snippet loader shall complete validation of every entry in `metadata.json` before making any call to S3 or DynamoDB.
 
-**CONTENT-020** `[ ]`
+**CONTENT-020** `[x]`
 When any validation error is detected across any entry, the snippet loader shall collect all validation errors from all entries, print them all, and exit with code 1 without writing any data to S3 or DynamoDB.
 
 ---
 
 ## 8. Duplicate snippetId is a Validation Error
 
-**CONTENT-021** `[ ]`
+**CONTENT-021** `[x]`
 When two or more entries in `metadata.json` share the same `snippetId` value, the snippet loader shall treat this as a validation error, include an error message identifying the duplicated `snippetId`, and halt processing with exit code 1 before making any AWS call.
 
 ---
 
 ## 9. Missing .java File is a Validation Error
 
-**CONTENT-022** `[ ]`
+**CONTENT-022** `[x]`
 When a `file` path in a `metadata.json` entry, resolved relative to the directory containing `metadata.json`, does not exist on disk, the snippet loader shall treat this as a validation error, include an error message identifying the missing path, and halt processing with exit code 1 before making any AWS call.
 
-**CONTENT-023** `[ ]`
+**CONTENT-023** `[x]`
 If a `file` field value does not end with `.java`, the snippet loader shall treat this as a validation error before attempting to resolve or read the file.
 
 ---
 
 ## 10. Idempotency — Re-run Upserts Existing Records
 
-**CONTENT-024** `[ ]`
+**CONTENT-024** `[x]`
 When the snippet loader is re-run against a `metadata.json` file that contains a `snippetId` already present in DynamoDB, the snippet loader shall overwrite the existing DynamoDB item with the current values from `metadata.json` and shall not skip the entry or raise an error.
 
-**CONTENT-025** `[ ]`
+**CONTENT-025** `[x]`
 When the snippet loader is re-run and the S3 object key for a snippet already exists in the target bucket, the snippet loader shall overwrite the existing S3 object with the current file content and shall not skip the upload or raise an error.
 
 > **Note — conflict with data-model.md (see Consistency Report §C):** `data-model.md` §6.4 describes a conditional `PutItem` with `attribute_not_exists(PK)` and a `--force` flag. `snippet-loader.md` §7.2 and §8 specify an unconditional upsert with no `--force` flag. CONTENT-024 and CONTENT-025 adopt the unconditional-upsert model from `snippet-loader.md`. This conflict must be resolved before implementation.
@@ -156,65 +156,65 @@ When the snippet loader is re-run and the S3 object key for a snippet already ex
 
 ## 11. --dry-run Flag
 
-**CONTENT-026** `[ ]`
+**CONTENT-026** `[x]`
 When the `--dry-run` flag is passed to the snippet loader, the snippet loader shall execute the full validation pass over all entries in `metadata.json`.
 
-**CONTENT-027** `[ ]`
+**CONTENT-027** `[x]`
 When the `--dry-run` flag is passed and all validation passes, the snippet loader shall print a summary of what would be uploaded to S3 and written to DynamoDB, and shall exit with code 0 without making any S3 or DynamoDB call.
 
-**CONTENT-028** `[ ]`
+**CONTENT-028** `[x]`
 When the `--dry-run` flag is passed and validation errors are found, the snippet loader shall print all validation errors and exit with code 1 without making any S3 or DynamoDB call.
 
 ---
 
 ## 12. S3 Object Key Format
 
-**CONTENT-029** `[ ]`
+**CONTENT-029** `[x]`
 The snippet loader shall upload each snippet's `.java` file to S3 using the object key `snippets/java/<difficulty_lowercase>/<snippetId>.java`, where `<difficulty_lowercase>` is the lowercase form of the snippet's `difficulty` value and `<snippetId>` is the UUID v4 from `metadata.json`.
 
-**CONTENT-030** `[ ]`
+**CONTENT-030** `[x]`
 The snippet loader shall not include the S3 bucket name or any `s3://` prefix in the object key written to DynamoDB as `contentKey`.
 
-**CONTENT-031** `[ ]`
+**CONTENT-031** `[x]`
 The snippet loader shall not use uppercase characters, spaces, or special characters other than hyphens and dots in any S3 object key it writes.
 
 ---
 
 ## 13. Answer Keys Stored in DynamoDB Only
 
-**CONTENT-032** `[ ]`
+**CONTENT-032** `[x]`
 The snippet loader shall store the `vulnerableLines` array only in DynamoDB and shall not include it in the S3 object content or S3 object metadata.
 
-**CONTENT-033** `[ ]`
+**CONTENT-033** `[x]`
 The snippet loader shall store the `explanation` string only in DynamoDB and shall not include it in the S3 object content or S3 object metadata.
 
-**CONTENT-034** `[ ]`
+**CONTENT-034** `[x]`
 While serving a `GetSnippet` response, the system shall not return the `vulnerableLines` or `explanation` attributes to the client prior to the user submitting an answer.
 
 ---
 
 ## 14. Snippet Content Served as text/plain; charset=utf-8
 
-**CONTENT-035** `[ ]`
+**CONTENT-035** `[x]`
 The snippet loader shall upload each `.java` file to S3 with the `Content-Type` header set to `text/plain; charset=utf-8`.
 
-**CONTENT-036** `[ ]`
+**CONTENT-036** `[x]`
 The snippet loader shall read each `.java` file from disk as UTF-8 and shall skip the entry with a warning — recording exit code 2 — if the file cannot be decoded as UTF-8.
 
 ---
 
 ## 15. Exit Codes
 
-**CONTENT-037** `[ ]`
+**CONTENT-037** `[x]`
 When all snippet entries are processed successfully (or when `--dry-run` completes with no validation errors), the snippet loader shall exit with code 0.
 
-**CONTENT-038** `[ ]`
+**CONTENT-038** `[x]`
 When any validation error is detected — including missing required fields, invalid enum values, out-of-range line numbers, duplicate `snippetId` values, or missing `.java` files — the snippet loader shall exit with code 1.
 
-**CONTENT-039** `[ ]`
+**CONTENT-039** `[x]`
 When validation passes but one or more entries cannot be written due to a runtime AWS error (S3 `ClientError`, DynamoDB `ClientError`, or unresolvable credentials), the snippet loader shall exit with code 2 after processing all remaining entries.
 
-**CONTENT-040** `[ ]`
+**CONTENT-040** `[x]`
 When AWS credentials cannot be resolved at session initialisation time, the snippet loader shall print a clear error message and exit with code 1 before attempting any S3 or DynamoDB call.
 
 > **Note — credentials exit code (see Consistency Report §D):** `snippet-loader.md` §9 places unresolvable credentials under exit code 1 (hard failure before processing), while the general AWS error category is exit code 2. CONTENT-040 follows the LLD precisely. This distinction should be made explicit in the implementation.

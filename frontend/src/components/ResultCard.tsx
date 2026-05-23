@@ -5,6 +5,8 @@ interface ResultCardProps {
   onNext: () => void;
 }
 
+const TIER_ORDER: Tier[] = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
+
 const TIER_LABELS: Record<Tier, string> = {
   BEGINNER: "Beginner",
   INTERMEDIATE: "Intermediate",
@@ -94,10 +96,10 @@ export function ResultCard({ result, onNext }: ResultCardProps) {
           }}
         >
           <span style={{ fontSize: "1.25rem" }}>
-            {tierChange.current > tierChange.previous ? "🎉" : "📉"}
+            {TIER_ORDER.indexOf(tierChange.current) > TIER_ORDER.indexOf(tierChange.previous) ? "🎉" : "📉"}
           </span>
           <span style={{ color: "#e2e8f0" }}>
-            {tierChange.current > tierChange.previous ? "Promoted to " : "Moved to "}
+            {TIER_ORDER.indexOf(tierChange.current) > TIER_ORDER.indexOf(tierChange.previous) ? "Promoted to " : "Moved to "}
             <strong style={{ color: TIER_COLOURS[tierChange.current] }}>
               {TIER_LABELS[tierChange.current]}
             </strong>

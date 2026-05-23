@@ -74,10 +74,10 @@ export const handler = async (
 
   const medians: SpeedMedians = mediansRes.Item
     ? {
-        BEGINNER: (mediansRes.Item.medians?.BEGINNER as number) ?? null,
-        INTERMEDIATE: (mediansRes.Item.medians?.INTERMEDIATE as number) ?? null,
-        ADVANCED: (mediansRes.Item.medians?.ADVANCED as number) ?? null,
-        sampleSizes: mediansRes.Item.sampleSizes ?? { BEGINNER: 0, INTERMEDIATE: 0, ADVANCED: 0 },
+        BEGINNER: (mediansRes.Item.value?.BEGINNER as number) ?? null,
+        INTERMEDIATE: (mediansRes.Item.value?.INTERMEDIATE as number) ?? null,
+        ADVANCED: (mediansRes.Item.value?.ADVANCED as number) ?? null,
+        sampleSizes: mediansRes.Item.value?.sampleSizes ?? { BEGINNER: 0, INTERMEDIATE: 0, ADVANCED: 0 },
       }
     : {
         BEGINNER: null,

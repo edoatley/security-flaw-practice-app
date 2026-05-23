@@ -28,33 +28,33 @@
 
 ### 1.1 Metadata Fetch
 
-**GAME-001** `[ ]`
+**GAME-001** `[x]`
 When the game loop enters the LOADING state, the `<GameStateManager>` shall issue an authenticated `GET /api/snippet` request with the current user's Bearer token in the `Authorization` header.
 
-**GAME-002** `[ ]`
+**GAME-002** `[x]`
 When `GET /api/snippet` returns HTTP 200 with a well-formed response body, the `<GameStateManager>` shall store the returned `snippetId`, `title`, `language`, `owaspCategory`, `difficulty`, `vulnerableLineCount`, and `lineCount` in the game state.
 
-**GAME-003** `[ ]`
+**GAME-003** `[x]`
 When `GET /api/snippet` returns HTTP 200 with a well-formed response body, the `<GameStateManager>` shall extract the `contentUrl` field and immediately issue a second `fetch()` request to that URL without an `Authorization` header.
 
-**GAME-004** `[ ]`
+**GAME-004** `[x]`
 When `GET /api/snippet` returns a response body where the `status` field equals `"TIER_COMPLETE"`, the `<GameStateManager>` shall transition to a TIER_COMPLETE display state rather than the PLAYING state.
 
-**GAME-005** `[ ]`
+**GAME-005** `[x]`
 When `GET /api/snippet` returns any HTTP 4xx or 5xx status, the `<GameStateManager>` shall transition to the ERROR state and store a user-facing error message without exposing raw server error details.
 
-**GAME-006** `[ ]`
+**GAME-006** `[x]`
 When the `GET /api/snippet` network request has not received a response within 15 seconds, the `<GameStateManager>` shall cancel the request using `AbortController` and transition to the ERROR state.
 
 ### 1.2 Content Fetch
 
-**GAME-007** `[ ]`
+**GAME-007** `[x]`
 When the `contentUrl` fetch returns an HTTP 200 response, the `<GameStateManager>` shall split the response body text on newline characters (`\n`) to produce the `lines` array and store it in the game state.
 
-**GAME-008** `[ ]`
+**GAME-008** `[x]`
 When both the `GET /api/snippet` metadata fetch and the `contentUrl` fetch have completed successfully, the `<GameStateManager>` shall transition to the PLAYING state with all snippet data available.
 
-**GAME-009** `[ ]`
+**GAME-009** `[x]`
 When the `contentUrl` fetch returns any non-200 HTTP status or fails due to a network error, the `<GameStateManager>` shall transition to the ERROR state and present the same retry options as for a metadata fetch failure.
 
 **GAME-010** `[ ]`
@@ -64,99 +64,99 @@ When the `contentUrl` fetch has not received a response within 15 seconds, the `
 
 ## 2. Snippet Display
 
-**GAME-011** `[ ]`
+**GAME-011** `[x]`
 While in the PLAYING state, the `<CodeViewer>` shall render every element of the `lines` array as a distinct, individually addressable row in the code display.
 
-**GAME-012** `[ ]`
+**GAME-012** `[x]`
 While in the PLAYING state, the `<CodeViewer>` shall display a line number to the left of each line of code, with line numbers starting at 1 and incrementing by 1 for each subsequent line.
 
-**GAME-013** `[ ]`
+**GAME-013** `[D]`
 While in the PLAYING state, the `<CodeViewer>` shall apply Java syntax highlighting to each line of code using `react-syntax-highlighter` with a custom renderer that preserves per-line click interaction.
 
-**GAME-014** `[ ]`
+**GAME-014** `[x]`
 The `<CodeViewer>` shall render line numbers using a non-selectable (`user-select: none`) style so that line numbers are not included when the user copies code text.
 
 ---
 
 ## 3. TIER_COMPLETE State
 
-**GAME-015** `[ ]`
+**GAME-015** `[x]`
 When the `<GameStateManager>` enters the TIER_COMPLETE display state, the `<GamePage>` shall display a message indicating that the user has completed all available snippets at their current difficulty tier.
 
-**GAME-016** `[ ]`
+**GAME-016** `[D]`
 When the `<GameStateManager>` enters the TIER_COMPLETE display state, the `<GamePage>` shall display a Reset Progress option that allows the user to request a tier reset.
 
-**GAME-017** `[ ]`
+**GAME-017** `[D]`
 When the `<GameStateManager>` enters the TIER_COMPLETE display state and the `canReset` field in the API response is `true`, the Reset Progress option shall be enabled and actionable.
 
 **GAME-018** `[D]`
 When the user activates the Reset Progress option, the `<GamePage>` shall call `DELETE /api/progress/tier` and, on success, transition back to the LOADING state. _(Deferred: reset route not implemented in v1.)_
 
-**GAME-019** `[ ]`
+**GAME-019** `[x]`
 While in the TIER_COMPLETE display state, the `<GamePage>` shall render the completed tier indicator in a visually distinct greyed-out style to differentiate it from active tiers.
 
 ---
 
 ## 4. Line Selection
 
-**GAME-020** `[ ]`
+**GAME-020** `[x]`
 While in the PLAYING state, the `<LineRow>` shall respond to a click on the line number or the line code area by dispatching a `TOGGLE_LINE` action with the 1-indexed line number of the clicked row.
 
-**GAME-021** `[ ]`
+**GAME-021** `[x]`
 When a `TOGGLE_LINE` action is dispatched and the target line number is not in `selectedLines`, the game reducer shall add that line number to `selectedLines`, provided the selection cap has not been reached.
 
-**GAME-022** `[ ]`
+**GAME-022** `[x]`
 When a `TOGGLE_LINE` action is dispatched and the target line number is already in `selectedLines`, the game reducer shall remove that line number from `selectedLines`, regardless of the current selection count.
 
-**GAME-023** `[ ]`
+**GAME-023** `[x]`
 While in the PLAYING state, a line that is present in `selectedLines` shall be rendered with the `selected` visual state (distinct background colour and bold line number).
 
-**GAME-024** `[ ]`
+**GAME-024** `[x]`
 While in the PLAYING state, a line that is not present in `selectedLines` shall be rendered with the `unselected` visual state.
 
-**GAME-025** `[ ]`
+**GAME-025** `[x]`
 When a `TOGGLE_LINE` action is dispatched for a phase other than `'playing'`, the game reducer shall treat the action as a no-op and leave `selectedLines` unchanged.
 
 ---
 
 ## 5. Line Selection Cap
 
-**GAME-026** `[ ]`
+**GAME-026** `[x]`
 When a `TOGGLE_LINE` action is dispatched to add a line and `selectedLines.size` is already equal to `snippet.vulnerableLineCount`, the game reducer shall not add the line to `selectedLines`.
 
-**GAME-027** `[ ]`
+**GAME-027** `[x]`
 When `selectedLines.size` equals `snippet.vulnerableLineCount`, the `<SelectionSummary>` shall display an inline message informing the user that the maximum number of lines is selected and instructing them to deselect a line to change their answer.
 
-**GAME-028** `[ ]`
+**GAME-028** `[x]`
 The `<SelectionSummary>` shall continuously display the current selection count and the maximum in the form "Selected: N / M lines" where N is `selectedLines.size` and M is `snippet.vulnerableLineCount`.
 
 ---
 
 ## 6. Submit Button State
 
-**GAME-029** `[ ]`
+**GAME-029** `[x]`
 While in the PLAYING state and `selectedLines.size` equals zero, the `<SubmitButton>` shall be rendered in a disabled state and shall not respond to click events.
 
-**GAME-030** `[ ]`
+**GAME-030** `[x]`
 While in the PLAYING state and `selectedLines.size` is greater than or equal to one, the `<SubmitButton>` shall be rendered in an enabled state and shall respond to click events.
 
-**GAME-031** `[ ]`
+**GAME-031** `[x]`
 When the user clicks the `<SubmitButton>` and the game loop transitions to the SUBMITTING state, the `<SubmitButton>` shall immediately be rendered in a disabled state and shall not respond to further click events for the duration of the SUBMITTING and RESULT states.
 
 ---
 
 ## 7. Submission
 
-**GAME-032** `[ ]`
+**GAME-032** `[x]`
 When the user clicks the enabled `<SubmitButton>`, the `<GameStateManager>` shall record the elapsed time in milliseconds since the snippet was first displayed in the PLAYING state as `timeTakenMs`.
 
-**GAME-033** `[ ]`
+**GAME-033** `[x]`
 When the user clicks the enabled `<SubmitButton>`, the `<GameStateManager>` shall dispatch a `SUBMIT_START` action, transitioning the game loop to the SUBMITTING state.
 
-**GAME-034** `[ ]`
+**GAME-034** `[x]`
 When the `SUBMIT_START` action is dispatched, the `<GameStateManager>` shall issue a `POST /api/answer` request with a JSON body containing `snippetId` (the current snippet's ID), `selectedLines` (the array of 1-indexed selected line numbers), and `timeTakenMs` (the elapsed time in milliseconds, as a non-negative integer).
 
-**GAME-035** `[ ]`
+**GAME-035** `[x]`
 The `<GameStateManager>` shall include the current user's Bearer token in the `Authorization` header of every `POST /api/answer` request.
 
 **GAME-036** `[ ]`
@@ -166,62 +166,62 @@ The `<GameStateManager>` shall send `timeTakenMs` as an integer value clamped to
 
 ## 8. Double-Submit Defence
 
-**GAME-037** `[ ]`
+**GAME-037** `[x]`
 When `POST /api/answer` returns HTTP 409, the `<GameStateManager>` shall transition to the ERROR state and shall display a message that clearly indicates the answer has already been submitted for this snippet.
 
-**GAME-038** `[ ]`
+**GAME-038** `[x]`
 When `POST /api/answer` returns HTTP 409, the `<GameStateManager>` shall not re-submit the answer on the next "Retry" action; instead it shall treat the retry as a "Next" action and fetch a new snippet.
 
 ---
 
 ## 9. Result Display
 
-**GAME-039** `[ ]`
+**GAME-039** `[x]`
 When `POST /api/answer` returns HTTP 200, the `<GameStateManager>` shall dispatch a `SUBMIT_SUCCESS` action with the response payload and transition to the RESULT state.
 
-**GAME-040** `[ ]`
+**GAME-040** `[x]`
 While in the RESULT state, the `<ResultCard>` shall display whether the user's submission was correct or incorrect, derived from the `correct` field of the submission response.
 
-**GAME-041** `[ ]`
+**GAME-041** `[x]`
 While in the RESULT state, the `<ResultCard>` shall display the OWASP category of the snippet's vulnerability, derived from the `owaspCategory` field of the submission response.
 
-**GAME-042** `[ ]`
+**GAME-042** `[x]`
 If the submission response contains `correct: true`, the `<ResultCard>` shall display the plain-text or Markdown explanation of the vulnerability, derived from the `explanation` field returned in `snippet` within the submission response.
 
-**GAME-042b** `[ ]`
+**GAME-042b** `[x]`
 If the submission response contains `correct: false`, the `<ResultCard>` shall not display an explanation; it shall instead display a prompt encouraging the user to try again or skip to the next snippet.
 
 ---
 
 ## 10. Post-Submission Line Highlighting — Correct and Incorrect Selections
 
-**GAME-043** `[ ]`
+**GAME-043** `[x]`
 While in the RESULT state, for every line number that is present in both `selectedLines` and `correctLines` (from `result.correctLines`), the `<LineRow>` shall be rendered with the `correct` visual state (distinct correct-answer background colour).
 
-**GAME-044** `[ ]`
+**GAME-044** `[x]`
 While in the RESULT state, for every line number that is present in `selectedLines` but not in `correctLines`, the `<LineRow>` shall be rendered with the `incorrect` visual state (distinct incorrect-selection background colour).
 
 ---
 
 ## 11. Post-Submission Line Highlighting — Missed Lines
 
-**GAME-045** `[ ]`
+**GAME-045** `[x]`
 While in the RESULT state, for every line number that is present in `correctLines` but not present in `selectedLines`, the `<LineRow>` shall be rendered with the `missed` visual state (distinct missed-answer background colour with a dashed outline).
 
-**GAME-046** `[ ]`
+**GAME-046** `[x]`
 While in the RESULT state, for every line number that is neither in `selectedLines` nor in `correctLines`, the `<LineRow>` shall be rendered with the `unselected` visual state.
 
 ---
 
 ## 12. Next Snippet Navigation
 
-**GAME-047** `[ ]`
+**GAME-047** `[x]`
 While in the RESULT state, the `<ResultCard>` shall display a Next button that allows the user to proceed to the next snippet.
 
-**GAME-048** `[ ]`
+**GAME-048** `[x]`
 When the user clicks the Next button while in the RESULT state, the `<GameStateManager>` shall dispatch a `NEXT` action, clear `selectedLines` and `result` from game state, and transition to the LOADING state.
 
-**GAME-049** `[ ]`
+**GAME-049** `[x]`
 When the `NEXT` action causes a transition to the LOADING state, the `<GameStateManager>` shall immediately issue a new `GET /api/snippet` request to fetch the next snippet.
 
 ---
@@ -241,38 +241,38 @@ While in the LOADING or SUBMITTING state, the `<SubmitButton>` shall not be visi
 
 ## 14. Error States
 
-**GAME-053** `[ ]`
+**GAME-053** `[x]`
 When the game loop transitions to the ERROR state from the LOADING state, the `<ErrorDisplay>` shall render a user-facing error message appropriate to the error type (network timeout, server error, or content fetch failure) without exposing raw HTTP status codes, stack traces, or server error bodies.
 
 **GAME-054** `[ ]`
 When the game loop transitions to the ERROR state from the SUBMITTING state, the `<ErrorDisplay>` shall render a user-facing error message and shall preserve `selectedLines` and the current snippet data so that the user's selection is not lost.
 
-**GAME-055** `[ ]`
+**GAME-055** `[x]`
 While in the ERROR state, the `<ErrorDisplay>` shall display a Retry button that, when clicked, dispatches a `RETRY` action.
 
-**GAME-056** `[ ]`
+**GAME-056** `[x]`
 When the user clicks the Retry button in the ERROR state and the previous error occurred during snippet loading, the `<GameStateManager>` shall transition to the LOADING state and re-issue `GET /api/snippet`.
 
-**GAME-057** `[ ]`
+**GAME-057** `[x]`
 While in the ERROR state triggered by a LOADING failure, the `<GamePage>` shall also display a Skip button that, when clicked, logs the skip locally and transitions to the LOADING state to fetch a different snippet.
 
 **GAME-058** `[ ]`
 If the game loop transitions to the ERROR state, the `<ErrorDisplay>` shall log the raw error details to the browser console only when `import.meta.env.DEV` is `true`; in production builds the raw error shall not be surfaced.
 
-**GAME-059** `[ ]`
+**GAME-059** `[x]`
 If `POST /api/answer` returns HTTP 401 and a subsequent token refresh also returns HTTP 401, the `<GameStateManager>` shall not surface an ERROR state; instead the `SessionExpiredError` shall be allowed to propagate to `<ProtectedRoute>`, which redirects the user to the login page.
 
 ---
 
 ## 15. Time Measurement
 
-**GAME-060** `[ ]`
+**GAME-060** `[x]`
 When the game loop transitions from the LOADING state to the PLAYING state, the `<GameStateManager>` shall record the current timestamp (via `Date.now()` or `performance.now()`) as the start of the timing window for the current snippet.
 
-**GAME-061** `[ ]`
+**GAME-061** `[x]`
 When the user clicks the enabled `<SubmitButton>`, the `<GameStateManager>` shall compute `timeTakenMs` as the difference in milliseconds between the current timestamp and the timestamp recorded at the start of the PLAYING state.
 
-**GAME-062** `[ ]`
+**GAME-062** `[x]`
 The `<GameStateManager>` shall not start the timing window before the transition to the PLAYING state; time spent in the LOADING state (waiting for the API and content fetches) shall not be included in `timeTakenMs`.
 
 **GAME-063** `[ ]`

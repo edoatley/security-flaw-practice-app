@@ -158,17 +158,13 @@ The table uses a composite key (`PK` + `SK`). The `PK` establishes the entity pa
 | Projection | `ALL` |
 | Billing | Provisioned alongside base table; no additional key schema cost |
 
-**Purpose:** Enables `GetSnippet` to retrieve all Snippets at a given difficulty tier efficiently. Because DynamoDB does not support random row selection natively, the Lambda fetches a page of snippets at the requested difficulty (using `ExclusiveStartKey` seeded from a random UUID to simulate a random starting offset) and picks the first item in the result.
+**Purpose:** Enables `GetSnippet` to retrieve all Snippets at a given difficulty tier efficiently. The Lambda queries all snippets at the requested difficulty with `Limit: 200`, excludes recently seen snippets, and picks a random candidate using `Math.random()`.
 
 **Populated by:** The snippet loader sets `GSI1PK = DIFFICULTY#<difficulty>` and `GSI1SK = SNIPPET#<snippetId>` on every Snippet record. User, Attempt, and Config records do **not** populate `GSI1PK`/`GSI1SK`, so they do not appear in this index.
 
-**Random selection detail:** A true uniform random draw is not achievable with a cheap DynamoDB Query because item count per difficulty is unknown without a Scan. The approach used is:
+**Random selection detail:** The Lambda queries `DIFFICULTY_INDEX` with `GSI1PK = DIFFICULTY#<tier>`, `Limit: 200`, filters out snippets already attempted recently (using a parallel attempt query), then selects one item via `Math.floor(Math.random() * candidates.length)`. `Math.random()` is acceptable for gameplay randomness — cryptographic security is not required.
 
-1. Generate a random UUID `r` at query time.
-2. Query `DIFFICULTY_INDEX` with `GSI1PK = DIFFICULTY#BEGINNER` and `GSI1SK >= SNIPPET#r`, `Limit=1`.
-3. If no result (i.e., `r` was past the last item in the bucket), wrap around: re-query without the SK lower bound, `Limit=1`.
-
-This gives a near-uniform distribution at low cost. The distribution is slightly biased toward snippets whose `snippetId` follows the modal UUID value, but this is acceptable for gameplay randomness at launch.
+At expected snippet counts (< 500 per tier at launch) a single-page query covers the full set. A future optimisation can use a UUID-seeded `ExclusiveStartKey` for larger inventories.
 
 **Why not a GSI on `difficulty` attribute directly:** DynamoDB GSIs require the projected attribute to be the GSI PK. Using a prefixed compound value (`DIFFICULTY#BEGINNER`) keeps the index clean and prevents non-Snippet entities from polluting the partition even if they happen to have a `difficulty` attribute.
 
@@ -187,7 +183,7 @@ All read and write operations performed by the three Lambda functions are enumer
 | AP-3 | Update user tier + counters | SubmitAnswer | Base table | `PK = USER#<userId>` AND `SK = PROFILE` | — | `UpdateItem` with `ADD totalAttempts :one`, `SET currentTier`, `SET updatedAt` |
 | AP-4 | Get snippet metadata (safe projection) | GetSnippet | Base table | `PK = SNIPPET#<snippetId>` AND `SK = METADATA` | — | `GetItem`; Lambda explicitly omits `vulnerableLines` and `explanation` from response |
 | AP-5 | Get snippet metadata with answer key | SubmitAnswer | Base table | `PK = SNIPPET#<snippetId>` AND `SK = METADATA` | — | `GetItem`; returns full item including `vulnerableLines` and `explanation` |
-| AP-6 | Random snippet by difficulty | GetSnippet | `DIFFICULTY_INDEX` | `GSI1PK = DIFFICULTY#<tier>` AND `GSI1SK >= SNIPPET#<randomUUID>`, `Limit=1` | — | Wrap-around query if no result (see §4.1) |
+| AP-6 | Random snippet by difficulty | GetSnippet | `DIFFICULTY_INDEX` | `GSI1PK = DIFFICULTY#<tier>`, `Limit=200` | — | Client-side `Math.random()` pick after excluding recent attempts (see §4.1) |
 | AP-7 | Write attempt record | SubmitAnswer | Base table | `PK = USER#<userId>` AND `SK = ATTEMPT#<ts>#<snippetId>` | — | `PutItem`; SK timestamp collision probability negligible |
 | AP-8 | Get last N attempts (rolling window) | GetProgress, SubmitAnswer | Base table | `PK = USER#<userId>` AND `begins_with(SK, 'ATTEMPT#')` | — | `Query`, `ScanIndexForward=false`, `Limit=20` |
 | AP-9 | Get speed medians config | SubmitAnswer, GetProgress | Base table | `PK = CONFIG#SPEED_MEDIANS` AND `SK = V0` | — | `GetItem`; result cached in Lambda warm instance |

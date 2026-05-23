@@ -290,7 +290,7 @@ export default $config({
       "default-src 'self'",
       "script-src 'self'",
       "style-src 'self' 'unsafe-inline'",
-      `connect-src 'self' https://sfpa-793976-production.auth.eu-west-2.amazoncognito.com https://api.secure-train.edoatley.co.uk https://content.secure-train.edoatley.co.uk`,
+      `connect-src 'self' https://sfpa-793976-production.auth.eu-west-2.amazoncognito.com https://api.secure-train.edoatley.co.uk https://${snippetDistribution.domainName}`,
       "object-src 'none'",
       "frame-ancestors 'none'",
     ].join("; ");

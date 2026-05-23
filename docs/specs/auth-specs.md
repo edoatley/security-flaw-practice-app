@@ -35,33 +35,33 @@ Status markers: `[ ]` = active, `[x]` = implemented, `[D]` = deferred
 
 ## 1. PKCE Flow Initiation — Cognito Hosted UI Redirect
 
-### AUTH-001 [ ]
+### AUTH-001 [x]
 **The `<LandingPage>` component shall generate a cryptographically random `code_verifier` of at least 43 characters using `crypto.getRandomValues`.**
 
 *Rationale: PKCE requires a verifier of sufficient entropy. The Web Crypto API is the only cryptographically secure source available in a browser context.*
 
 ---
 
-### AUTH-002 [ ]
+### AUTH-002 [x]
 **The `<LandingPage>` component shall derive the `code_challenge` as `BASE64URL(SHA-256(code_verifier))` using the S256 method.**
 
 *Rationale: S256 is the PKCE challenge method mandated by OAuth 2.0 BCP for public clients. Plain method is prohibited.*
 
 ---
 
-### AUTH-003 [ ]
+### AUTH-003 [x]
 **The `<LandingPage>` component shall generate a cryptographically random `state` parameter for CSRF protection before initiating any Cognito redirect.**
 
 ---
 
-### AUTH-004 [ ]
+### AUTH-004 [x]
 **The `<LandingPage>` component shall store both the `state` value and the `code_verifier` in `sessionStorage` before redirecting to the Cognito Hosted UI.**
 
 *Rationale: `sessionStorage` is tab-scoped and cleared on tab close, limiting the exposure window compared to `localStorage`.*
 
 ---
 
-### AUTH-005 [ ]
+### AUTH-005 [x]
 **When the user has no access token in memory, the `<LandingPage>` component shall redirect the browser to the Cognito Hosted UI URL constructed as:**
 ```
 https://<VITE_COGNITO_DOMAIN>/oauth2/authorize
@@ -76,7 +76,7 @@ https://<VITE_COGNITO_DOMAIN>/oauth2/authorize
 
 ---
 
-### AUTH-006 [ ]
+### AUTH-006 [x]
 **When the user already has a valid access token in memory, the `<LandingPage>` component shall redirect to `/game` without initiating a Cognito redirect.**
 
 *Rationale: Prevents unnecessary re-authentication for already-authenticated users who navigate to the root route.*
@@ -85,19 +85,19 @@ https://<VITE_COGNITO_DOMAIN>/oauth2/authorize
 
 ## 2. Auth Callback — Code Exchange and CSRF Validation
 
-### AUTH-007 [ ]
+### AUTH-007 [x]
 **When the browser is redirected to `/auth/callback` by Cognito, the `<AuthCallbackPage>` component shall read the `state` query parameter and compare it against the value stored in `sessionStorage`.**
 
 ---
 
-### AUTH-008 [ ]
+### AUTH-008 [x]
 **If the `state` query parameter does not match the `sessionStorage` value, the `<AuthCallbackPage>` component shall redirect to `/` without exchanging the authorization code.**
 
 *Rationale: A state mismatch indicates a potential CSRF attack or a stale/corrupt session. The authorization code must not be exchanged in this case.*
 
 ---
 
-### AUTH-009 [ ]
+### AUTH-009 [x]
 **When the CSRF state check passes, the `<AuthCallbackPage>` component shall POST to the Cognito token endpoint with the following parameters:**
 ```
 grant_type=authorization_code
@@ -109,50 +109,50 @@ code_verifier=<VERIFIER from sessionStorage>
 
 ---
 
-### AUTH-010 [ ]
+### AUTH-010 [x]
 **When the Cognito token endpoint returns a successful response, the `<AuthCallbackPage>` component shall store the `access_token` and `id_token` in module-level memory within `AuthProvider`.**
 
 ---
 
-### AUTH-011 [ ]
+### AUTH-011 [x]
 **When the Cognito token endpoint returns a successful response, the `<AuthCallbackPage>` component shall POST the `refresh_token` to `POST /auth/session` to cause the backend to set the httpOnly refresh cookie.**
 
 ---
 
-### AUTH-012 [ ]
+### AUTH-012 [x]
 **After a successful token exchange and session establishment, the `<AuthCallbackPage>` component shall delete both the `state` and `code_verifier` entries from `sessionStorage`.**
 
 *Rationale: These values are single-use. Retaining them beyond the callback creates an unnecessary attack surface.*
 
 ---
 
-### AUTH-013 [ ]
+### AUTH-013 [x]
 **After a successful token exchange and session establishment, the `<AuthCallbackPage>` component shall navigate to `/game`.**
 
 ---
 
 ## 3. AuthSession Lambda — Setting the HttpOnly Refresh Cookie
 
-### AUTH-014 [ ]
+### AUTH-014 [x]
 **The `POST /auth/session` route shall operate without a JWT authorizer, as it is the mechanism by which the initial session is established.**
 
 *Rationale: A JWT authorizer cannot be applied here because the caller does not yet have a valid access token stored on the backend.*
 
 ---
 
-### AUTH-015 [ ]
+### AUTH-015 [x]
 **When `POST /auth/session` receives a `refresh_token` in the request body over HTTPS, the AuthSession Lambda shall respond with a `Set-Cookie` header containing the refresh token.**
 
 ---
 
-### AUTH-016 [ ]
+### AUTH-016 [x]
 **The `Set-Cookie` header set by the AuthSession Lambda shall include the attributes `HttpOnly; Secure; SameSite=None; Path=/auth`.**
 
 *Rationale: `HttpOnly` prevents JavaScript from reading the token (XSS protection); `Secure` enforces HTTPS transport and is required alongside `SameSite=None`; `SameSite=None` allows the cookie to be sent on cross-origin requests from the SPA to the API (necessary in local dev and with separate subdomains); `Path=/auth` restricts the cookie's scope to the auth endpoints only.*
 
 ---
 
-### AUTH-017 [ ]
+### AUTH-017 [x]
 **The AuthSession Lambda shall not return the refresh token in the response body.**
 
 *Rationale: The only permissible channel for the refresh token after this point is the HttpOnly cookie. Returning it in the body would expose it to JavaScript.*
@@ -161,153 +161,153 @@ code_verifier=<VERIFIER from sessionStorage>
 
 ## 4. AuthRefresh Lambda — Exchanging Cookie for New Access Token
 
-### AUTH-018 [ ]
+### AUTH-018 [x]
 **The `POST /auth/refresh` route shall operate without a JWT authorizer.**
 
 *Rationale: The route is the mechanism by which a new access token is obtained. Requiring an existing valid access token would make silent refresh impossible once the token expires.*
 
 ---
 
-### AUTH-019 [ ]
+### AUTH-019 [x]
 **When `POST /auth/refresh` is called, the AuthRefresh Lambda shall read the `refresh_token` from the `HttpOnly` cookie forwarded by API Gateway.**
 
 ---
 
-### AUTH-020 [ ]
+### AUTH-020 [x]
 **When the AuthRefresh Lambda receives a valid refresh token cookie, it shall call the Cognito token endpoint with `grant_type=refresh_token` and return the new `access_token` and `expires_in` values in the JSON response body.**
 
 ---
 
-### AUTH-021 [ ]
+### AUTH-021 [x]
 **When the Cognito token endpoint rejects the refresh token (e.g., token expired or revoked), the AuthRefresh Lambda shall return HTTP 401.**
 
 *Rationale: A 401 from this endpoint signals to the SPA that the session is unrecoverable and the user must re-authenticate.*
 
 ---
 
-### AUTH-022 [ ]
+### AUTH-022 [x]
 **The AuthRefresh Lambda shall not return the refresh token in the response body under any circumstances.**
 
 ---
 
 ## 5. Silent Refresh — Proactive Refresh at T-5 Minutes
 
-### AUTH-023 [ ]
+### AUTH-023 [x]
 **When a new access token is stored in memory, `AuthProvider` shall start a timer targeting 5 minutes before the token's expiry (`expires_in - 300` seconds).**
 
 *Rationale: Proactive refresh ensures a valid token is available before the current one expires, preventing mid-session disruption.*
 
 ---
 
-### AUTH-024 [ ]
+### AUTH-024 [x]
 **When the proactive refresh timer fires, `AuthProvider` shall call `POST /auth/refresh`, replace the in-memory access token with the new token returned, and reset the expiry timer.**
 
 ---
 
-### AUTH-025 [ ]
+### AUTH-025 [x]
 **When the proactive refresh timer fires, `AuthProvider` shall call `POST /auth/refresh` using the same `isRefreshing` flag that guards 401-triggered refreshes, to prevent concurrent refresh attempts.**
 
 *Rationale: A proactive timer firing simultaneously with a 401-triggered refresh could result in two concurrent calls to `/auth/refresh`, potentially causing a race condition on refresh token rotation.*
 
 ---
 
-### AUTH-026 [ ]
+### AUTH-026 [x]
 **When the proactive refresh call returns HTTP 401, `AuthProvider` shall clear the in-memory access token, set `isAuthenticated` to `false`, and dispatch a `SESSION_EXPIRED` window event.**
 
 ---
 
 ## 6. Silent Refresh — On Page Load with Cookie Present
 
-### AUTH-027 [ ]
+### AUTH-027 [x]
 **When `<ProtectedRoute>` renders and no access token is present in memory, the system shall attempt a single call to `POST /auth/refresh` before redirecting the user to `/`.**
 
 *Rationale: A page reload clears in-memory state. If the user has a valid refresh cookie from a prior session, silent re-authentication avoids an unnecessary round-trip through the Cognito Hosted UI.*
 
 ---
 
-### AUTH-028 [ ]
+### AUTH-028 [x]
 **When the page-load silent refresh call to `POST /auth/refresh` succeeds, `<ProtectedRoute>` shall store the returned access token in memory and render the protected children.**
 
 ---
 
-### AUTH-029 [ ]
+### AUTH-029 [x]
 **When the page-load silent refresh call to `POST /auth/refresh` returns HTTP 401 or fails with a network error, `<ProtectedRoute>` shall redirect the browser to `/`.**
 
 ---
 
 ## 7. JWT Attachment to API Requests
 
-### AUTH-030 [ ]
+### AUTH-030 [x]
 **The `apiClient` module shall maintain the access token in a module-level variable (`accessToken`) that is set via the exported `setAccessToken(token: string | null)` function.**
 
 ---
 
-### AUTH-031 [ ]
+### AUTH-031 [x]
 **While an access token is present in the `apiClient` module-level variable, every outgoing API request shall include the header `Authorization: Bearer <accessToken>`.**
 
 ---
 
-### AUTH-032 [ ]
+### AUTH-032 [x]
 **While no access token is present in the `apiClient` module-level variable, the `apiClient` shall send API requests without an `Authorization` header.**
 
 *Rationale: The 401 that results from this will trigger the standard refresh-and-retry path rather than silently failing.*
 
 ---
 
-### AUTH-033 [ ]
+### AUTH-033 [x]
 **`AuthProvider` shall call `setAccessToken(null)` when the user logs out and `setAccessToken(<token>)` whenever a new access token is obtained.**
 
 ---
 
 ## 8. 401 Handling — Trigger Refresh and Retry
 
-### AUTH-034 [ ]
+### AUTH-034 [x]
 **When an API request returns HTTP 401 and no refresh is already in progress (`isRefreshing === false`), the `apiClient` shall set `isRefreshing = true`, call `POST /auth/refresh`, and on success store the new access token and retry the original request exactly once.**
 
 ---
 
-### AUTH-035 [ ]
+### AUTH-035 [x]
 **When an API request returns HTTP 401 and a refresh is already in progress (`isRefreshing === true`), the `apiClient` shall wait for the in-progress refresh promise to resolve before retrying the original request with the new token.**
 
 *Rationale: This thundering-herd guard prevents multiple simultaneous 401 responses from generating multiple concurrent refresh calls.*
 
 ---
 
-### AUTH-036 [ ]
+### AUTH-036 [x]
 **When the retry of the original request after a successful token refresh also returns HTTP 401, the `apiClient` shall propagate the error to the caller without initiating another refresh attempt.**
 
 *Rationale: Only one refresh attempt is permitted per original request. A 401 on the retried request indicates a deeper problem that a further refresh will not resolve.*
 
 ---
 
-### AUTH-037 [ ]
+### AUTH-037 [x]
 **When `POST /auth/refresh` returns HTTP 401 during a 401-triggered refresh, the `apiClient` shall clear the in-memory access token, set `isRefreshing = false`, dispatch a `SESSION_EXPIRED` window event, and throw a `SessionExpiredError`.**
 
 ---
 
-### AUTH-038 [ ]
+### AUTH-038 [x]
 **When `AuthProvider` receives a `SESSION_EXPIRED` window event, it shall clear the in-memory access token and set `isAuthenticated` to `false`.**
 
 ---
 
-### AUTH-039 [ ]
+### AUTH-039 [x]
 **When `isAuthenticated` transitions to `false`, `<ProtectedRoute>` shall redirect the browser to `/`.**
 
 ---
 
 ## 9. Logout
 
-### AUTH-040 [ ]
+### AUTH-040 [x]
 **When the user clicks the logout button, `authContext.logout()` shall immediately clear the in-memory `accessToken` and `idToken`.**
 
 ---
 
-### AUTH-041 [ ]
+### AUTH-041 [x]
 **When `authContext.logout()` is called, the system shall call `POST /auth/logout` on the backend.**
 
 ---
 
-### AUTH-042 [ ]
+### AUTH-042 [x]
 **When `POST /auth/logout` is called, the backend shall call the Cognito `/oauth2/revoke` endpoint to revoke the refresh token.**
 
 ---
@@ -319,7 +319,7 @@ code_verifier=<VERIFIER from sessionStorage>
 
 ---
 
-### AUTH-044 [ ]
+### AUTH-044 [x]
 **After the backend logout call completes, `authContext.logout()` shall redirect the browser to the Cognito logout endpoint:**
 ```
 https://<VITE_COGNITO_DOMAIN>/logout
@@ -331,7 +331,7 @@ https://<VITE_COGNITO_DOMAIN>/logout
 
 ---
 
-### AUTH-045 [ ]
+### AUTH-045 [x]
 **The `apiClient` module shall call `setAccessToken(null)` as part of the logout sequence before any network calls are made.**
 
 *Rationale: Clearing the in-memory token immediately prevents any in-flight retry logic from using a token that has been intentionally invalidated.*
@@ -340,12 +340,12 @@ https://<VITE_COGNITO_DOMAIN>/logout
 
 ## 10. Unauthenticated Access to Protected Routes
 
-### AUTH-046 [ ]
+### AUTH-046 [x]
 **The `<ProtectedRoute>` component shall wrap all routes at `/game` and `/progress`.**
 
 ---
 
-### AUTH-047 [ ]
+### AUTH-047 [x]
 **When `<ProtectedRoute>` renders and no access token is in memory and the page-load silent refresh attempt has failed, the system shall redirect the browser to `/`.**
 
 ---
@@ -357,7 +357,7 @@ https://<VITE_COGNITO_DOMAIN>/logout
 
 ---
 
-### AUTH-049 [ ]
+### AUTH-049 [x]
 **While `<ProtectedRoute>` is awaiting the result of the page-load silent refresh attempt, the system shall not render the protected route's children.**
 
 *Rationale: Rendering children before authentication is confirmed could expose protected UI momentarily before the redirect fires.*
@@ -366,14 +366,14 @@ https://<VITE_COGNITO_DOMAIN>/logout
 
 ## 11. Local Development HTTPS Requirement
 
-### AUTH-050 [ ]
+### AUTH-050 [x]
 **The Vite development server shall be configured to serve the frontend over HTTPS at `https://localhost:5173` using a locally-trusted TLS certificate generated by `mkcert`.**
 
 *Rationale: The `Secure` attribute on the refresh cookie requires HTTPS. Serving the dev server over HTTP would silently drop the cookie, making the auth flow untestable locally.*
 
 ---
 
-### AUTH-051 [ ]
+### AUTH-051 [x]
 **The `mkcert`-generated certificate files (`localhost.pem`, `localhost-key.pem`) shall be referenced in `vite.config.ts` under `server.https` and shall be excluded from version control via `.gitignore`.**
 
 ---
@@ -388,19 +388,19 @@ mkcert localhost
 
 ---
 
-### AUTH-053 [ ]
+### AUTH-053 [x]
 **The Cognito user pool client shall register `https://localhost:5173/auth/callback` as a permitted callback URL when the SST `$dev` flag is `true`.**
 
 *Rationale: Cognito rejects redirects to unregistered callback URLs. The `$dev` flag in `sst.config.ts` switches between the localhost URL and the production CloudFront URL automatically.*
 
 ---
 
-### AUTH-054 [ ]
+### AUTH-054 [x]
 **The API Gateway CORS configuration shall allow `https://localhost:5173` as an origin when the SST `$dev` flag is `true`.**
 
 ---
 
-### AUTH-055 [ ]
+### AUTH-055 [x]
 **The cookie attributes (`HttpOnly; Secure; SameSite=None; Path=/auth`) shall be identical in local development and production environments.**
 
 *Rationale: Testing with relaxed cookie attributes in development means the production security behaviour is never exercised locally, which is precisely the scenario most likely to hide auth bugs.*
@@ -409,68 +409,68 @@ mkcert localhost
 
 ## 12. Refresh Cookie Attributes
 
-### AUTH-056 [ ]
+### AUTH-056 [x]
 **The refresh token cookie set by the AuthSession Lambda shall have the `HttpOnly` attribute.**
 
 *Rationale: `HttpOnly` prevents any JavaScript running on the page — including injected XSS payloads — from reading or exfiltrating the refresh token.*
 
 ---
 
-### AUTH-057 [ ]
+### AUTH-057 [x]
 **The refresh token cookie set by the AuthSession Lambda shall have the `Secure` attribute.**
 
 *Rationale: `Secure` ensures the cookie is only transmitted over encrypted HTTPS connections, preventing interception on plain-text HTTP.*
 
 ---
 
-### AUTH-058 [ ]
+### AUTH-058 [x]
 **The refresh token cookie set by the AuthSession Lambda shall have the `SameSite=None` attribute.**
 
 *Rationale: `SameSite=None` is required for the cookie to be sent on cross-origin requests from the SPA (on `localhost:5173` in dev, or a different subdomain) to the API. CSRF risk is mitigated by the combination of `Path=/auth` (limits scope to auth endpoints), the fact that `POST /auth/refresh` returns a new access token in the body (not a state-changing mutation), and the PKCE + `state` parameter protection on the login flow.*
 
 ---
 
-### AUTH-059 [ ]
+### AUTH-059 [x]
 **The refresh token cookie set by the AuthSession Lambda shall have the `Path=/auth` attribute.**
 
 *Rationale: Scoping the cookie to `/auth/refresh` means the browser only attaches it to requests to that specific path, preventing it from being sent with game API requests or any other route.*
 
 ---
 
-### AUTH-060 [ ]
+### AUTH-060 [x]
 **The API Gateway CORS configuration shall include `allowCredentials: true` to permit the browser to send the `HttpOnly` cookie on cross-origin requests to `/auth/refresh`.**
 
 *Rationale: Without `credentials: include` on the fetch and `Access-Control-Allow-Credentials: true` on the server, browsers suppress cookies on cross-origin requests.*
 
 ---
 
-### AUTH-061 [ ]
+### AUTH-061 [x]
 **The frontend fetch call to `POST /auth/refresh` shall include `credentials: 'include'` to ensure the browser attaches the HttpOnly cookie to the request.**
 
 ---
 
 ## 13. Access Token Scope — Memory Only
 
-### AUTH-062 [ ]
+### AUTH-062 [x]
 **The system shall never write the access token to `localStorage`, `sessionStorage`, or any other persistent browser storage mechanism.**
 
 *Rationale: Any browser storage accessible to JavaScript can be read by XSS payloads. The access token must remain confined to module-level memory, which is not accessible outside the JavaScript module boundary.*
 
 ---
 
-### AUTH-063 [ ]
+### AUTH-063 [x]
 **The `apiClient` module shall store the access token exclusively in a module-level variable (`let accessToken: string | null = null`) that is not exposed on the `window` object or any other globally accessible reference.**
 
 ---
 
-### AUTH-064 [ ]
+### AUTH-064 [x]
 **`AuthProvider` shall store the access token exclusively by calling `apiClient.setAccessToken()` and shall not place the raw token value into React state or React Context.**
 
 *Rationale: Storing the token in React state or Context would trigger a re-render of every subscribed component on each silent refresh (approximately every 55 minutes). The Context should expose only `isAuthenticated: boolean` and derived identity fields, not the raw token.*
 
 ---
 
-### AUTH-065 [ ]
+### AUTH-065 [x]
 **When the page is reloaded, the access token shall not be recoverable from any browser storage source; the system shall instead rely on the HttpOnly refresh cookie to obtain a new access token via the page-load silent refresh flow (AUTH-027).**
 
 ---

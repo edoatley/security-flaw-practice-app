@@ -31,7 +31,7 @@
 
 ## 1. Authentication & Authorization
 
-### API-001 [ ]
+### API-001 [x]
 
 When an HTTP request arrives at any API Gateway v2 route without an `Authorization: Bearer <jwt>` header, the API Gateway JWT authorizer shall reject the request with HTTP 401 without invoking the target Lambda function.
 
@@ -40,7 +40,7 @@ When an HTTP request arrives at any API Gateway v2 route without an `Authorizati
 
 ---
 
-### API-002 [ ]
+### API-002 [x]
 
 When an HTTP request arrives at any API Gateway v2 route with a malformed, expired, or otherwise invalid JWT in the `Authorization: Bearer <jwt>` header, the API Gateway JWT authorizer shall reject the request with HTTP 401 without invoking the target Lambda function.
 
@@ -49,7 +49,7 @@ When an HTTP request arrives at any API Gateway v2 route with a malformed, expir
 
 ---
 
-### API-003 [ ]
+### API-003 [x]
 
 The `GetSnippet`, `SubmitAnswer`, and `GetProgress` Lambda functions shall each extract the canonical `userId` exclusively from the `requestContext.authorizer.jwt.claims.sub` path of the verified API Gateway event, and shall not perform independent JWT signature verification.
 
@@ -69,7 +69,7 @@ If the `sub` claim is absent from the authorizer context that reaches a Lambda f
 
 ## 2. Sensitive Field Redaction
 
-### API-005 [ ]
+### API-005 [x]
 
 The `GetSnippet` Lambda shall never include the `vulnerableLines` attribute in any HTTP response it returns, regardless of what is stored in DynamoDB for the queried snippet.
 
@@ -78,7 +78,7 @@ The `GetSnippet` Lambda shall never include the `vulnerableLines` attribute in a
 
 ---
 
-### API-006 [ ]
+### API-006 [x]
 
 The `GetSnippet` Lambda shall never include the `explanation` attribute in any HTTP response it returns, regardless of what is stored in DynamoDB for the queried snippet.
 
@@ -87,7 +87,7 @@ The `GetSnippet` Lambda shall never include the `explanation` attribute in any H
 
 ---
 
-### API-007 [ ]
+### API-007 [x]
 
 While constructing a `GET /api/snippet` 200 response, the `GetSnippet` Lambda shall include the `vulnerableLineCount` field (the count of vulnerable lines) and shall not derive or reconstruct the actual line numbers from any other returned field.
 
@@ -96,7 +96,7 @@ While constructing a `GET /api/snippet` 200 response, the `GetSnippet` Lambda sh
 
 ---
 
-### API-008 [ ]
+### API-008 [x]
 
 The `GetProgress` Lambda shall omit the `submittedLines` attribute from every item in the `recentAttempts` array it returns, even though `submittedLines` is stored on each attempt record in DynamoDB.
 
@@ -107,7 +107,7 @@ The `GetProgress` Lambda shall omit the `submittedLines` attribute from every it
 
 ## 3. GetSnippet — User Profile Lifecycle
 
-### API-009 [ ]
+### API-009 [x]
 
 When the `GetSnippet` Lambda performs a strongly consistent `GetItem` for a user profile and receives a definitive miss (item does not exist), the Lambda shall treat the request as the user's first visit and shall proceed to create a new profile with `currentTier` set to `BEGINNER`.
 
@@ -116,7 +116,7 @@ When the `GetSnippet` Lambda performs a strongly consistent `GetItem` for a user
 
 ---
 
-### API-010 [ ]
+### API-010 [x]
 
 When creating a new user profile on first visit, the `GetSnippet` Lambda shall issue the `PutItem` call with a `ConditionExpression` of `attribute_not_exists(PK)` so that a concurrent first-visit request from the same user cannot create a duplicate profile record.
 
@@ -125,7 +125,7 @@ When creating a new user profile on first visit, the `GetSnippet` Lambda shall i
 
 ---
 
-### API-011 [ ]
+### API-011 [x]
 
 If the conditional `PutItem` for new profile creation fails because a concurrent request already created the profile (DynamoDB returns `ConditionalCheckFailedException`), the `GetSnippet` Lambda shall immediately retry the `GetItem` using a strongly consistent read to obtain the profile created by the concurrent request, rather than returning an error to the caller.
 
@@ -134,7 +134,7 @@ If the conditional `PutItem` for new profile creation fails because a concurrent
 
 ---
 
-### API-012 [ ]
+### API-012 [x]
 
 If the conditional `PutItem` for new profile creation fails and any subsequent error prevents the Lambda from obtaining a valid user profile, the `GetSnippet` Lambda shall return HTTP 500 with error code `PROFILE_INIT_FAILED`.
 
@@ -145,7 +145,7 @@ If the conditional `PutItem` for new profile creation fails and any subsequent e
 
 ## 4. GetSnippet — Snippet Selection
 
-### API-013 [ ]
+### API-013 [x]
 
 When zero snippet records exist in DynamoDB for the user's current tier (i.e. the GSI query on `DIFFICULTY#<tier>` returns an empty result set before any exclusion filtering), the `GetSnippet` Lambda shall return HTTP 200 with a body of `{ "status": "TIER_COMPLETE", "tier": "<tier>", "canReset": true }` and shall not return HTTP 404.
 
@@ -154,7 +154,7 @@ When zero snippet records exist in DynamoDB for the user's current tier (i.e. th
 
 ---
 
-### API-014 [ ]
+### API-014 [x]
 
 When selecting a snippet, the `GetSnippet` Lambda shall query the most recent 5 attempt records for the authenticated user and shall exclude their corresponding `snippetId` values from the candidate set before making a random selection.
 
@@ -163,7 +163,7 @@ When selecting a snippet, the `GetSnippet` Lambda shall query the most recent 5 
 
 ---
 
-### API-015 [ ]
+### API-015 [x]
 
 If excluding the recently-seen snippet IDs from the candidate set results in an empty set, the `GetSnippet` Lambda shall fall back to the full (unfiltered) candidate set and shall still return a snippet rather than an error response.
 
@@ -172,7 +172,7 @@ If excluding the recently-seen snippet IDs from the candidate set results in an 
 
 ---
 
-### API-016 [ ]
+### API-016 [x]
 
 The `GetSnippet` Lambda shall query snippets from the GSI with a `ProjectionExpression` that explicitly omits `vulnerableLines` and `explanation`, ensuring those attributes are not loaded into Lambda memory during snippet selection.
 
@@ -183,7 +183,7 @@ The `GetSnippet` Lambda shall query snippets from the GSI with a `ProjectionExpr
 
 ## 5. SubmitAnswer — Input Validation
 
-### API-017 [ ]
+### API-017 [x]
 
 The `SubmitAnswer` Lambda shall validate that every element of the `selectedLines` array is an integer with a value of 1 or greater, and shall return HTTP 400 with error code `INVALID_LINE_NUMBER` (including the offending value in the error message) if any element fails this check.
 
@@ -192,7 +192,7 @@ The `SubmitAnswer` Lambda shall validate that every element of the `selectedLine
 
 ---
 
-### API-018 [ ]
+### API-018 [x]
 
 The `SubmitAnswer` Lambda shall validate that every element of the `selectedLines` array is a whole integer (not a floating-point number), and shall return HTTP 400 with error code `INVALID_LINE_NUMBER` if any element is non-integer.
 
@@ -201,7 +201,7 @@ The `SubmitAnswer` Lambda shall validate that every element of the `selectedLine
 
 ---
 
-### API-019 [ ]
+### API-019 [x]
 
 If `selectedLines` contains more elements than the snippet's `vulnerableLineCount` (fetched from DynamoDB), the `SubmitAnswer` Lambda shall return HTTP 400 with error code `TOO_MANY_LINES`.
 
@@ -210,7 +210,7 @@ If `selectedLines` contains more elements than the snippet's `vulnerableLineCoun
 
 ---
 
-### API-020 [ ]
+### API-020 [x]
 
 If any element of `selectedLines` is greater than the snippet's `lineCount` (fetched from DynamoDB), the `SubmitAnswer` Lambda shall return HTTP 400 with error code `LINE_OUT_OF_RANGE`.
 
@@ -219,7 +219,7 @@ If any element of `selectedLines` is greater than the snippet's `lineCount` (fet
 
 ---
 
-### API-021 [ ]
+### API-021 [x]
 
 The `SubmitAnswer` Lambda shall perform all field-level validations that do not require a DynamoDB read (type checks, UUID format, array element types, `timeTakenMs` range) before issuing any DynamoDB operation, returning HTTP 400 immediately on the first violation found.
 
@@ -228,7 +228,7 @@ The `SubmitAnswer` Lambda shall perform all field-level validations that do not 
 
 ---
 
-### API-022 [ ]
+### API-022 [x]
 
 When `SubmitAnswer` receives a request where `selectedLines` is absent, not an array, or is an empty array, the Lambda shall return HTTP 400 with error code `INVALID_SELECTED_LINES`.
 
@@ -239,7 +239,7 @@ When `SubmitAnswer` receives a request where `selectedLines` is absent, not an a
 
 ## 6. SubmitAnswer — Answer Evaluation
 
-### API-023 [ ]
+### API-023 [x]
 
 The `SubmitAnswer` Lambda shall evaluate correctness by testing exact set equality between the submitted line numbers and the stored `vulnerableLines` set, such that the submission is correct if and only if both sets contain identical elements regardless of the order in which they were submitted.
 
@@ -248,7 +248,7 @@ The `SubmitAnswer` Lambda shall evaluate correctness by testing exact set equali
 
 ---
 
-### API-024 [ ]
+### API-024 [x]
 
 The `SubmitAnswer` Lambda shall record an attempt as `correct = false` whenever `selectedLines` does not exactly match `vulnerableLines` in set membership, including cases where the user correctly identifies a subset but misses one or more vulnerable lines.
 
@@ -259,7 +259,7 @@ The `SubmitAnswer` Lambda shall record an attempt as `correct = false` whenever 
 
 ## 7. SubmitAnswer — Response Content
 
-### API-025 [ ]
+### API-025 [x]
 
 The `SubmitAnswer` Lambda shall include the snippet's `vulnerableLines` array and `explanation` string in the HTTP 200 response only when `correct` is `true`. When `correct` is `false`, the `snippet` object shall be omitted from the response entirely. This is the only route and condition under which these fields are returned to the client.
 
@@ -268,7 +268,7 @@ The `SubmitAnswer` Lambda shall include the snippet's `vulnerableLines` array an
 
 ---
 
-### API-026 [ ]
+### API-026 [x]
 
 If the attempt submission results in a duplicate-detection failure (HTTP 409), the `SubmitAnswer` Lambda shall not return `vulnerableLines` or `explanation` in the error response body.
 
@@ -279,7 +279,7 @@ If the attempt submission results in a duplicate-detection failure (HTTP 409), t
 
 ## 8. SubmitAnswer — Time Recording
 
-### API-027 [ ]
+### API-027 [x]
 
 The `SubmitAnswer` Lambda shall clamp the client-supplied `timeTakenMs` value to a maximum of 600,000 milliseconds (10 minutes) before persisting the attempt record, discarding any client-supplied value above this ceiling.
 
@@ -297,7 +297,7 @@ The `SubmitAnswer` Lambda shall clamp `timeTakenMs` to a minimum of 0 millisecon
 
 ---
 
-### API-029 [ ]
+### API-029 [x]
 
 The `SubmitAnswer` Lambda shall use the clamped value of `timeTakenMs` — not the raw client-supplied value — when persisting the attempt record and when computing the speed score component of the composite score.
 
@@ -308,7 +308,7 @@ The `SubmitAnswer` Lambda shall use the clamped value of `timeTakenMs` — not t
 
 ## 9. SubmitAnswer — Persistence
 
-### API-030 [ ]
+### API-030 [x]
 
 The `SubmitAnswer` Lambda shall write the new attempt record and update the user profile counters atomically using a single `TransactWriteItems` call, so that neither write can succeed independently if the other fails.
 
@@ -317,7 +317,7 @@ The `SubmitAnswer` Lambda shall write the new attempt record and update the user
 
 ---
 
-### API-031 [ ]
+### API-031 [x]
 
 The `TransactWriteItems` call in `SubmitAnswer` shall include a `ConditionExpression` of `attribute_not_exists(PK) AND attribute_not_exists(SK)` on the attempt `Put` operation so that a duplicate submission for the same user, snippet, and timestamp is rejected at the database level.
 
@@ -326,7 +326,7 @@ The `TransactWriteItems` call in `SubmitAnswer` shall include a `ConditionExpres
 
 ---
 
-### API-032 [ ]
+### API-032 [x]
 
 When the `TransactWriteItems` call in `SubmitAnswer` fails with `TransactionCanceledException` due to a `ConditionalCheckFailed` reason on the attempt record, the Lambda shall return HTTP 409 with error code `ALREADY_SUBMITTED`.
 
@@ -335,7 +335,7 @@ When the `TransactWriteItems` call in `SubmitAnswer` fails with `TransactionCanc
 
 ---
 
-### API-033 [ ]
+### API-033 [x]
 
 The `SubmitAnswer` Lambda shall update the user profile's `currentTier`, `totalAttempts`, `updatedAt` fields, and (if the attempt was correct) `correctAttempts` within the same `TransactWriteItems` call as the attempt record write, so that profile state is always consistent with attempt history.
 
@@ -346,7 +346,7 @@ The `SubmitAnswer` Lambda shall update the user profile's `currentTier`, `totalA
 
 ## 10. GetProgress — Response Content
 
-### API-034 [ ]
+### API-034 [x]
 
 The `GetProgress` Lambda shall include `currentTier`, `totalAttempts`, `correctAttempts`, and the rolling-window composite score (as the `rolling` object containing at minimum `correctRate`, `speedScore`, `compositeScore`, and `windowSize`) in every HTTP 200 response.
 
@@ -355,7 +355,7 @@ The `GetProgress` Lambda shall include `currentTier`, `totalAttempts`, `correctA
 
 ---
 
-### API-035 [ ]
+### API-035 [x]
 
 When a request is made to `GET /api/progress` for a user whose profile does not exist in DynamoDB, the `GetProgress` Lambda shall return HTTP 404 with error code `USER_NOT_FOUND`.
 
@@ -366,7 +366,7 @@ When a request is made to `GET /api/progress` for a user whose profile does not 
 
 ## 11. Error Response Envelope
 
-### API-036 [ ]
+### API-036 [x]
 
 The `GetSnippet`, `SubmitAnswer`, and `GetProgress` Lambda functions shall return all Lambda-originated error responses (4xx and 5xx) using the JSON envelope `{ "error": { "code": "<SNAKE_CASE_CODE>", "message": "<human-readable description>" } }` with no additional top-level fields.
 
@@ -375,7 +375,7 @@ The `GetSnippet`, `SubmitAnswer`, and `GetProgress` Lambda functions shall retur
 
 ---
 
-### API-037 [ ]
+### API-037 [x]
 
 The `GetSnippet`, `SubmitAnswer`, and `GetProgress` Lambda functions shall not wrap API Gateway-originated error responses (such as the JWT authorizer's 401) in the Lambda error envelope, as these are generated by API Gateway before Lambda is invoked.
 
@@ -404,7 +404,7 @@ When a Lambda function experiences a DynamoDB connectivity failure, it shall ret
 
 ## 12. Observability
 
-### API-040 [ ]
+### API-040 [D]
 
 Each of the `GetSnippet`, `SubmitAnswer`, and `GetProgress` Lambda functions shall generate a UUID `correlationId` at handler entry and shall include that value in every structured log line emitted during the invocation.
 
@@ -413,7 +413,7 @@ Each of the `GetSnippet`, `SubmitAnswer`, and `GetProgress` Lambda functions sha
 
 ---
 
-### API-041 [ ]
+### API-041 [D]
 
 Each Lambda function shall include the authenticated `userId` (derived from the `sub` claim) in every structured log line it emits.
 
@@ -422,7 +422,7 @@ Each Lambda function shall include the authenticated `userId` (derived from the 
 
 ---
 
-### API-042 [ ]
+### API-042 [D]
 
 Each Lambda function shall record the total handler duration in milliseconds and emit it as a structured log field named `duration` at the end of every invocation.
 
@@ -431,7 +431,7 @@ Each Lambda function shall record the total handler duration in milliseconds and
 
 ---
 
-### API-043 [ ]
+### API-043 [D]
 
 Each Lambda function shall emit all log output as newline-delimited JSON objects (structured logging) rather than plain-text strings, to enable CloudWatch Logs Insights to query by field.
 

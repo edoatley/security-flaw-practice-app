@@ -420,11 +420,11 @@ windowSize = effectiveWindow.length
 correctRate = countWhere(correct == true) / windowSize
 
 // Speed score per attempt: normalise timeTakenMs against the tier's median
-// speedScore ∈ [0, 1]; 1 = at or faster than median; 0 = twice or more the median
+// speedScore ∈ [0, 1]; 0.5 = at median speed; 1.0 = twice as fast; 0 = twice as slow
 speedScorePerAttempt(attempt, medians):
-  median = medians[attempt.tierId] or medians.BEGINNER as fallback
-  ratio = attempt.timeTakenMs / median
-  return Math.max(0, Math.min(1, 2 - ratio))   // linear between 0x and 2x median
+  median = medians[attempt.tierId]
+  rawSpeed = median / attempt.timeTakenMs          // > 1 if faster, < 1 if slower
+  return Math.min(2, Math.max(0, rawSpeed)) / 2    // capped at [0, 1]
 
 rollingSpeedScore = mean(speedScorePerAttempt for each attempt in window)
 

@@ -6,6 +6,7 @@ import {
   computeCompositeScore,
   evaluateTierTransition,
   DEFAULT_ALGO_PARAMS,
+  TIER_ORDER,
   type AttemptRecord,
   type SpeedMedians,
   type Tier,
@@ -46,10 +47,10 @@ async function getSpeedMedians(): Promise<SpeedMedians> {
     if (result.Item) {
       const item = result.Item;
       cachedMedians = {
-        BEGINNER: (item.medians?.BEGINNER as number) ?? null,
-        INTERMEDIATE: (item.medians?.INTERMEDIATE as number) ?? null,
-        ADVANCED: (item.medians?.ADVANCED as number) ?? null,
-        sampleSizes: item.sampleSizes ?? { BEGINNER: 0, INTERMEDIATE: 0, ADVANCED: 0 },
+        BEGINNER: (item.value?.BEGINNER as number) ?? null,
+        INTERMEDIATE: (item.value?.INTERMEDIATE as number) ?? null,
+        ADVANCED: (item.value?.ADVANCED as number) ?? null,
+        sampleSizes: item.value?.sampleSizes ?? { BEGINNER: 0, INTERMEDIATE: 0, ADVANCED: 0 },
       };
     } else {
       cachedMedians = fallback;
@@ -215,7 +216,7 @@ export const handler = async (
 
   if (transition.changed) {
     updateExpression += ", lastTransitionTimestamp = :now, lastTransitionType = :transType";
-    expressionValues[":transType"] = newTier > currentTier ? "PROMOTION" : "DEMOTION";
+    expressionValues[":transType"] = TIER_ORDER.indexOf(newTier) > TIER_ORDER.indexOf(currentTier) ? "PROMOTION" : "DEMOTION";
   }
 
   try {

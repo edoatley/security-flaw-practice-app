@@ -70,7 +70,7 @@ export function computeCompositeScore(
   return params.correctRateWeight * correctRate + params.speedWeight * windowSpeedScore;
 }
 
-const TIER_ORDER: Tier[] = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
+export const TIER_ORDER: Tier[] = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
 
 export function evaluateTierTransition(
   currentTier: Tier,
