@@ -179,6 +179,7 @@ export default $config({
           : [
               "https://localhost:5173",
               $interpolate`https://${$app.stage}.secure-train.edoatley.co.uk`,
+              "https://*.cloudfront.net",
             ],
         allowMethods: ["GET", "POST"],
         allowHeaders: ["Authorization", "Content-Type", "Cookie"],
