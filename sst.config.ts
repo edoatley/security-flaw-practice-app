@@ -172,15 +172,19 @@ export default $config({
     });
 
     // 5. API Gateway v2
+    // Non-prod allowed origins include localhost for sst dev, and any additional
+    // deployed SPA origins listed in SST_EXTRA_CORS_ORIGINS (space-separated).
+    // Set this env var when deploying a personal stage to add the CloudFront URL:
+    //   SST_EXTRA_CORS_ORIGINS="https://d38clod5ffvfs6.cloudfront.net" npx sst deploy
+    const extraOrigins = (process.env.SST_EXTRA_CORS_ORIGINS ?? "")
+      .split(" ")
+      .filter(Boolean);
+
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: {
         allowOrigins: isProd
           ? ["https://secure-train.edoatley.co.uk"]
-          : [
-              "https://localhost:5173",
-              $interpolate`https://${$app.stage}.secure-train.edoatley.co.uk`,
-              "https://*.cloudfront.net",
-            ],
+          : ["https://localhost:5173", ...extraOrigins],
         allowMethods: ["GET", "POST"],
         allowHeaders: ["Authorization", "Content-Type", "Cookie"],
         allowCredentials: true,
