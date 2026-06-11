@@ -4,6 +4,8 @@
 
 # Claude
 .claude
+.agents
+skills-lock.json
 
 # npm
 node_modules
@@ -17,3 +19,6 @@ frontend/.env.local
 
 # Playwright
 .playwright-mcp
+
+# Mac
+.DS_Store

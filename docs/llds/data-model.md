@@ -1,9 +1,8 @@
 # Low-Level Design: DynamoDB Single-Table Design & S3 Object Layout
 
-**Version:** 0.1 (Draft)
-**Status:** In Review
+**Version:** 1.0 (Implemented)
+**Status:** Implemented
 **Date:** 2026-05-16
-**Authors:** edoatley
 **Parent HLD:** [high-level-design.md](../high-level-design.md)
 
 ---
@@ -79,6 +78,8 @@ One record per registered user, keyed on the Cognito `sub` claim. This record ho
 | `currentTier` | String | Yes | Enum: `BEGINNER`, `INTERMEDIATE`, `ADVANCED` |
 | `totalAttempts` | Number | Yes | Monotonically increasing count; updated atomically via `ADD` expression |
 | `correctAttempts` | Number | Yes | Count of correct submissions; updated atomically |
+| `lastTransitionTimestamp` | String (ISO 8601) | No | Timestamp of the most recent tier promotion or demotion; absent on new profiles. Used by `SubmitAnswer` to filter rolling-window attempts to only those at the current tier post-transition (see adaptive-difficulty.md §6.3). |
+| `lastTransitionType` | String | No | `PROMOTION` or `DEMOTION`; absent until first tier change |
 | `createdAt` | String (ISO 8601) | Yes | Timestamp of first login |
 | `updatedAt` | String (ISO 8601) | Yes | Timestamp of last tier or counter update |
 
@@ -104,7 +105,25 @@ One record per `SubmitAnswer` call. Attempts are children of a User in the singl
 
 ---
 
-### 2.4 Config
+### 2.4 Tier Transition Event
+
+One record written per tier promotion or demotion, co-located in the user's partition. Used for audit, analytics, and diagnosing algorithm behaviour.
+
+| Attribute | Type | Required | Notes |
+|---|---|---|---|
+| `PK` | String | Yes | `USER#<userId>` — same partition as User Profile and Attempts |
+| `SK` | String | Yes | `TRANSITION#<ISO8601-UTC>#<uuidSuffix>` |
+| `entityType` | String | Yes | Constant: `TIER_TRANSITION` |
+| `fromTier` | String | Yes | Tier before the transition |
+| `toTier` | String | Yes | Tier after the transition |
+| `triggerType` | String | Yes | `PROMOTION` or `DEMOTION` |
+| `compositeScore` | Number | Yes | Rolling composite score that triggered the transition |
+| `windowSize` | Number | Yes | Number of attempts in the scoring window at transition time |
+| `timestamp` | String (ISO 8601) | Yes | UTC time of the transition |
+
+---
+
+### 2.5 Config
 
 A small number of system-wide configuration items are stored in the same table, avoiding a separate parameter store dependency for low-update data. Currently this covers the per-difficulty median response times used by the speed-score component of the adaptive difficulty algorithm.
 
@@ -140,6 +159,7 @@ The table uses a composite key (`PK` + `SK`). The `PK` establishes the entity pa
 | Snippet | `SNIPPET#<snippetId>` | `METADATA` | `SNIPPET#a1b2c3d4-...` | `METADATA` |
 | User Profile | `USER#<userId>` | `PROFILE` | `USER#f9e8d7c6-...` | `PROFILE` |
 | Attempt | `USER#<userId>` | `ATTEMPT#<timestamp>#<snippetId>` | `USER#f9e8d7c6-...` | `ATTEMPT#2026-05-16T10:23:45.123Z#a1b2c3d4-...` |
+| Tier Transition | `USER#<userId>` | `TRANSITION#<timestamp>#<uuidSuffix>` | `USER#f9e8d7c6-...` | `TRANSITION#2026-05-16T11:00:00.000Z#b2c3d4e5-...` |
 | Config | `CONFIG#<configKey>` | `V0` | `CONFIG#SPEED_MEDIANS` | `V0` |
 
 **Why Attempts share the User partition:** All reads of Attempts are always scoped to a single user. Keeping Attempts in the same partition as the User Profile allows a single `Query` with a key condition on `PK = USER#<userId> AND begins_with(SK, 'ATTEMPT#')`, returning items in chronological order without any secondary index. This is the one query that benefits most from DynamoDB's native sort.

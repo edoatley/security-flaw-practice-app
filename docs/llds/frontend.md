@@ -1,10 +1,10 @@
 # Low-Level Design: React SPA Frontend
 
 **Component:** Frontend (React SPA)
-**Version:** 0.1 (Draft)
+**Version:** 1.0 (Implemented)
+**Status:** Implemented
 **Date:** 2026-05-16
-**Status:** Draft
-**Parent HLD:** `docs/high-level-design.md`
+**Parent HLD:** [high-level-design.md](../high-level-design.md)
 
 ---
 

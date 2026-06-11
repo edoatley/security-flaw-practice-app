@@ -157,7 +157,7 @@ After seeding snippets, verify the game API end-to-end:
 
 ```bash
 # Set your stage outputs
-API="https://0itsetefp0.execute-api.eu-west-2.amazonaws.com"   # or your stage API URL
+API="https://<api-id>.execute-api.eu-west-2.amazonaws.com"   # from: npx sst deploy --stage <your-name> outputs
 
 # 1. Verify GetSnippet returns a snippet (requires a valid JWT from a browser session)
 curl -s -H "Authorization: Bearer <JWT>" "$API/api/snippet" | jq .
@@ -239,7 +239,7 @@ In production, the frontend and API share the same apex domain (`secure-train.ed
 Always verify you're in the sandbox account before deploying:
 ```bash
 aws sts get-caller-identity --profile sandbox
-# Should show Account: 793976186123
+# Should show the sandbox account ID (verify it matches your expected account)
 ```
 
 **Callback URL mismatch.**

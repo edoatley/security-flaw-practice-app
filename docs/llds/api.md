@@ -1,23 +1,28 @@
 # Low-Level Design: API Lambda Functions
 
-**Version:** 0.1 (Draft)
-**Status:** Under Review
+**Version:** 1.0 (Implemented)
+**Status:** Implemented
 **Date:** 2026-05-16
-**Parent HLD:** [High-Level Design v0.2](../high-level-design.md)
+**Parent HLD:** [High-Level Design v0.4](../high-level-design.md)
 
 ---
 
 ## 1. Scope
 
-This document covers the low-level design for the three AWS Lambda functions that sit behind the API Gateway v2 HTTP API. It defines the precise request/response contracts, DynamoDB access patterns, scoring logic, cold start mitigations, and IAM permissions for each function. Frontend integration details and infrastructure-as-code specifics (SST resource declarations) are out of scope here.
+This document covers the low-level design for all six AWS Lambda functions that sit behind the API Gateway v2 HTTP API. It defines the precise request/response contracts, DynamoDB access patterns, scoring logic, cold start mitigations, and IAM permissions for each function. Frontend integration details and infrastructure-as-code specifics (SST resource declarations) are out of scope here.
 
-The three functions are:
+The six functions are:
 
-| Route | Function Name | Primary Concern |
-|---|---|---|
-| `GET /api/snippet` | `GetSnippet` | Adaptive snippet selection; return metadata + CloudFront URL |
-| `POST /api/answer` | `SubmitAnswer` | Validate, score, persist attempt, re-evaluate tier |
-| `GET /api/progress` | `GetProgress` | Aggregate attempt history; return stats and current tier |
+| Route | Function Name | Auth | Primary Concern |
+|---|---|---|---|
+| `GET /api/snippet` | `GetSnippet` | JWT required | Adaptive snippet selection; return metadata + CloudFront URL |
+| `POST /api/answer` | `SubmitAnswer` | JWT required | Validate, score, persist attempt, re-evaluate tier |
+| `GET /api/progress` | `GetProgress` | JWT required | Aggregate attempt history; return stats and current tier |
+| `POST /auth/session` | `AuthSession` | None | Receive refresh token from SPA; set httpOnly cookie |
+| `POST /auth/refresh` | `AuthRefresh` | None | Exchange cookie for new access token |
+| `POST /auth/logout` | `AuthLogout` | None | Revoke refresh token; clear cookie |
+
+Sections 3–5 cover the game functions (JWT-authorised). Section 6 covers cross-cutting concerns. **Section 7 covers the three auth functions** (no JWT authorizer). Section 8 covers decisions and alternatives.
 
 ---
 
@@ -67,7 +72,7 @@ A single DynamoDB table is used with overloaded partition and sort keys. The two
 | `title` | String | Human-readable name |
 | `language` | String | `java` at launch |
 | `difficulty` | String | `BEGINNER` \| `INTERMEDIATE` \| `ADVANCED` |
-| `owaspCategory` | String | e.g., `A03:2021-Injection` |
+| `owaspCategory` | String | e.g., `A03_INJECTION` — underscore-enum format; see data-model.md §7.1 for full list |
 | `vulnerableLines` | Number Set | Correct line numbers (1-indexed) — never sent to client |
 | `vulnerableLineCount` | Number | `vulnerableLines.size` — sent to client as the selection cap |
 | `lineCount` | Number | Total lines in the snippet file |
@@ -77,7 +82,7 @@ A single DynamoDB table is used with overloaded partition and sort keys. The two
 | `GSI1PK` | String | `DIFFICULTY#<difficulty>` |
 | `GSI1SK` | String | `SNIPPET#<snippetId>` |
 
-**GSI1** (`GSI1PK-GSI1SK-index`): partition key = `GSI1PK`, sort key = `GSI1SK`. Projects all attributes. Used by `GetSnippet` to query by difficulty.
+**GSI1** (`GSI1PK-GSI1SK-index`): partition key = `GSI1PK`, sort key = `GSI1SK`. Projects all attributes. Used by `GetSnippet` to query by difficulty. Note: `data-model.md` refers to this index by the logical alias `DIFFICULTY_INDEX`; the physical SST-assigned name is `GSI1PK-GSI1SK-index` and is the authoritative name used in code and IAM policies. Aligning these to a single canonical name is tracked as tech debt.
 
 **User profile entity**
 
@@ -86,9 +91,12 @@ A single DynamoDB table is used with overloaded partition and sort keys. The two
 | `PK` | String | `USER#<userId>` |
 | `SK` | String | `PROFILE` |
 | `userId` | String | Cognito sub |
+| `email` | String | From Cognito token; informational only, not used for auth |
 | `currentTier` | String | `BEGINNER` \| `INTERMEDIATE` \| `ADVANCED` |
 | `totalAttempts` | Number | Lifetime count |
 | `correctAttempts` | Number | Lifetime count |
+| `lastTransitionTimestamp` | String | ISO 8601 — timestamp of most recent tier promotion or demotion; used by rolling-window filter to exclude pre-transition attempts (see adaptive-difficulty.md §6.3) |
+| `lastTransitionType` | String | `PROMOTION` \| `DEMOTION` — type of most recent transition; absent until first transition |
 | `createdAt` | String | ISO 8601 |
 | `updatedAt` | String | ISO 8601 |
 
@@ -112,7 +120,7 @@ The lexicographic sort key format `ATTEMPT#<ISO8601>#<uuid>` means a `Query` wit
 | Attribute | Type | Notes |
 |---|---|---|
 | `PK` | String | `CONFIG#SPEED_MEDIANS` |
-| `SK` | String | `LATEST` |
+| `SK` | String | `V0` (version sentinel; see data-model.md §2.4) |
 | `medians` | Map | `{ BEGINNER: number, INTERMEDIATE: number, ADVANCED: number }` — ms |
 | `updatedAt` | String | ISO 8601 |
 
@@ -153,7 +161,7 @@ No request body. No query parameters (reserved for future filtering).
   "snippetId": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
   "title": "SQL Injection via String Concatenation",
   "language": "java",
-  "owaspCategory": "A03:2021-Injection",
+  "owaspCategory": "A03_INJECTION",
   "difficulty": "BEGINNER",
   "lineCount": 24,
   "vulnerableLineCount": 1,
@@ -328,7 +336,7 @@ Field constraints:
   },
   "snippet": {
     "vulnerableLines": [7],
-    "owaspCategory": "A03:2021-Injection",
+    "owaspCategory": "A03_INJECTION",
     "explanation": "The query is built by concatenating user-supplied input directly into the SQL string on line 7. An attacker can inject arbitrary SQL..."
   }
 }
@@ -405,7 +413,7 @@ ProjectionExpression: correct, timeTakenMs, tierId, timestamp
 Also fetch the speed medians config item:
 
 ```
-GetItem: PK=CONFIG#SPEED_MEDIANS, SK=LATEST
+GetItem: PK=CONFIG#SPEED_MEDIANS, SK=V0
 ```
 
 This read is done concurrently with the rolling window query using `Promise.all`.
@@ -701,7 +709,174 @@ Each Lambda function in SST v4 gets its own execution role. Permissions are atta
 
 ---
 
-## 7. Decisions and Alternatives
+## 7. Auth Lambda Functions
+
+The three auth functions share no JWT authorizer — API Gateway routes them directly to Lambda. Their sole job is managing the httpOnly refresh-token cookie lifecycle. The Cognito `CognitoIdentityProviderClient` is the only AWS SDK dependency; DynamoDB is not used.
+
+For the full PKCE/auth flow from the frontend perspective see `frontend.md` §3.
+
+---
+
+### 7.1 AuthSession (`POST /auth/session`)
+
+**Trigger:** Called by the SPA immediately after the Cognito Hosted UI redirects back with an authorization code. The SPA has already exchanged the code for tokens client-side via the Cognito `/oauth2/token` endpoint; it sends the resulting refresh token to this Lambda to be stored in a server-side cookie.
+
+#### Request Contract
+
+```
+POST /auth/session
+Content-Type: application/json
+
+{
+  "refreshToken": "<cognito-refresh-token>"
+}
+```
+
+#### Response Contract
+
+**200 OK**
+
+```json
+{ "ok": true }
+```
+
+Sets the following response header:
+
+```
+Set-Cookie: refresh_token=<value>; HttpOnly; Secure; SameSite=None; Path=/auth; Max-Age=2592000
+```
+
+**Error responses**
+
+| Scenario | HTTP Status | `error.code` | Notes |
+|---|---|---|---|
+| Body missing or not JSON | 400 | `INVALID_REQUEST_BODY` | |
+| `refreshToken` missing or not a string | 400 | `INVALID_REFRESH_TOKEN` | |
+| Unexpected exception | 500 | `INTERNAL_ERROR` | |
+
+#### Cookie Attributes
+
+| Attribute | Value | Rationale |
+|---|---|---|
+| `HttpOnly` | set | Prevents JS access; mitigates XSS token theft |
+| `Secure` | set | Required for `SameSite=None`; enforces HTTPS-only |
+| `SameSite=None` | set | Allows cross-origin cookie sending (SPA on `localhost:5173`, API on `execute-api.amazonaws.com` in dev) |
+| `Path=/auth` | set | Cookie is only sent to `/auth/*` routes; not attached to `/api/*` calls |
+| `Max-Age=2592000` | 30 days | Matches Cognito refresh token validity |
+
+#### IAM Permissions
+
+No AWS SDK calls are made beyond constructing the response. No IAM permissions beyond basic Lambda execution are required.
+
+---
+
+### 7.2 AuthRefresh (`POST /auth/refresh`)
+
+**Trigger:** Called by the SPA to silently renew the access token. Can be triggered proactively (at `expires_in - 300` seconds) or reactively (on a 401 response from an API call).
+
+#### Request Contract
+
+```
+POST /auth/refresh
+Cookie: refresh_token=<value>
+```
+
+No request body.
+
+#### Response Contract
+
+**200 OK**
+
+```json
+{
+  "access_token": "<cognito-access-token>",
+  "expires_in": 3600
+}
+```
+
+**Error responses**
+
+| Scenario | HTTP Status | `error.code` | Notes |
+|---|---|---|---|
+| `refresh_token` cookie absent | 401 | `NO_REFRESH_COOKIE` | User must re-authenticate |
+| Cognito rejects the refresh token (expired, revoked) | 401 | `REFRESH_FAILED` | User must re-authenticate |
+| Cognito unreachable | 502 | `COGNITO_ERROR` | Transient; client should retry |
+| Unexpected exception | 500 | `INTERNAL_ERROR` | |
+
+#### Logic
+
+1. Parse the `Cookie` header for `refresh_token`.
+2. If absent → return 401 `NO_REFRESH_COOKIE`.
+3. POST to `https://<COGNITO_DOMAIN>/oauth2/token` with `grant_type=refresh_token`, `client_id=<CLIENT_ID>`, `refresh_token=<value>`.
+4. If Cognito returns an error → return 401 `REFRESH_FAILED`.
+5. Return the new `access_token` and `expires_in` in the response body. Do **not** re-set the `refresh_token` cookie (Cognito may or may not rotate it; the SPA re-calls `AuthSession` only on the initial login).
+
+#### IAM Permissions
+
+No DynamoDB permissions. Outbound HTTPS to Cognito's token endpoint is made via the Node.js native `https` module (or the AWS SDK's Cognito client). No additional IAM permissions beyond Lambda execution are needed for outbound HTTPS calls.
+
+---
+
+### 7.3 AuthLogout (`POST /auth/logout`)
+
+**Trigger:** Called by the SPA when the user clicks Logout.
+
+#### Request Contract
+
+```
+POST /auth/logout
+Cookie: refresh_token=<value>
+```
+
+No request body.
+
+#### Response Contract
+
+**200 OK** (always, even if token revocation fails)
+
+```json
+{ "ok": true }
+```
+
+Sets the following response header to clear the cookie:
+
+```
+Set-Cookie: refresh_token=; HttpOnly; Secure; SameSite=None; Path=/auth; Max-Age=0
+```
+
+#### Logic
+
+1. Parse the `Cookie` header for `refresh_token`.
+2. If present, attempt to POST to `https://<COGNITO_DOMAIN>/oauth2/revoke` with `token=<value>` and `client_id=<CLIENT_ID>`. This is best-effort; failure is logged but does not affect the response.
+3. Always return 200 with `Set-Cookie: ... Max-Age=0` to clear the cookie, regardless of whether revocation succeeded.
+
+**Rationale for always-200:** The user intends to log out. Returning an error because Cognito was unreachable would confuse the SPA and leave the UI in a partially-logged-out state. The cookie is cleared unconditionally; the refresh token may remain valid in Cognito until its natural expiry, which is an acceptable risk.
+
+#### IAM Permissions
+
+No DynamoDB permissions. Outbound HTTPS to Cognito only.
+
+---
+
+### 7.4 Auth Function Runtime Defaults
+
+| Property | Value |
+|---|---|
+| Runtime | Node.js 22.x |
+| Architecture | arm64 |
+| Memory | 256 MB (no DynamoDB; minimal compute) |
+| Timeout | 10 s |
+| Environment variables | `COGNITO_DOMAIN`, `COGNITO_CLIENT_ID` |
+
+---
+
+## 8. Decisions and Alternatives
+
+### Tech Debt
+
+**TD1 — GSI naming inconsistency:** `api.md` uses the physical SST name `GSI1PK-GSI1SK-index`; `data-model.md` uses the logical alias `DIFFICULTY_INDEX`. These should be unified to one name. The physical SST name is authoritative; `data-model.md` should be updated to use it. Deferred to avoid churn before a schema change occurs.
+
+---
 
 ### D1 — CloudFront URL vs. Pre-signed S3 URL for Snippet Content
 
@@ -753,7 +928,7 @@ Each Lambda function in SST v4 gets its own execution role. Permissions are atta
 
 ---
 
-## 8. Edge Case Probe
+## 9. Edge Case Probe
 
 The following questions identify gaps, unspecified failure modes, concurrency issues, and implicit assumptions this LLD does not fully address. Each is a candidate for a follow-up design decision or an acceptance test.
 

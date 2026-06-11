@@ -28,12 +28,12 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 **Verification:** JWT routes → 401 without token; auth routes → 501. DynamoDB, S3, Cognito, CloudFront, API Gateway all deployed in eu-west-2.
 
 **Deployed outputs (edoatley stage):**
-- API: `https://0itsetefp0.execute-api.eu-west-2.amazonaws.com`
-- Frontend: `https://d2f8i8wh2lqiqm.cloudfront.net`
-- Cognito User Pool: `eu-west-2_VVP8q00KT`, Client ID: `76en7r4i4nrttptoov29gasjoh`
-- Snippet CDN: `drcxs06o68yvn.cloudfront.net`
-- DynamoDB table: `security-flaw-practice-app-edoatley-AppTableTable-cnsokcdd`
-- Snippet bucket: `snippetbucket-c7b1918`
+- API: `https://<api-id>.execute-api.eu-west-2.amazonaws.com`
+- Frontend: `https://<cloudfront-id>.cloudfront.net`
+- Cognito User Pool: `eu-west-2_<pool-id>`, Client ID: `<client-id>`
+- Snippet CDN: `<snippet-cdn-id>.cloudfront.net`
+- DynamoDB table: `security-flaw-practice-app-edoatley-AppTableTable-<suffix>`
+- Snippet bucket: `snippetbucket-<suffix>`
 
 ---
 
@@ -225,8 +225,8 @@ Full build-out from infrastructure skeleton to production-hardened live site.
 **CSP (production):**
 ```
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
-connect-src 'self' https://sfpa-793976-production.auth.eu-west-2.amazoncognito.com
-  https://api.secure-train.edoatley.co.uk https://content.secure-train.edoatley.co.uk;
+connect-src 'self' https://<cognito-domain>.auth.eu-west-2.amazoncognito.com
+  https://api.<your-domain> https://content.<your-domain>;
 object-src 'none'; frame-ancestors 'none'
 ```
 

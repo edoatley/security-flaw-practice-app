@@ -1,9 +1,9 @@
 # Low-Level Design: SST Infrastructure & Project Structure
 
 **Component:** SST v4 Infrastructure-as-Code & Repository Layout
-**Version:** 0.1 (Draft)
+**Version:** 1.0 (Implemented)
+**Status:** Implemented
 **Date:** 2026-05-16
-**Status:** Draft
 **Parent HLD:** [high-level-design.md](../high-level-design.md)
 
 ---
@@ -252,7 +252,31 @@ const authLogoutFn = api.route("POST /auth/logout", {
 });
 ```
 
-### 3.6 CloudFront Distribution for Snippet Bucket
+### 3.6 ComputeMedians Scheduled Lambda
+
+A seventh Lambda (`compute-medians.ts`) runs on a daily EventBridge schedule to recompute per-difficulty speed medians and write them to the `CONFIG#SPEED_MEDIANS/V0` DynamoDB item. It is not attached to API Gateway.
+
+```typescript
+const computeMediansFn = new sst.aws.Function("ComputeMedians", {
+  handler: "backend/functions/compute-medians.handler",
+  link: [table],
+  memory: "512 MB",
+  timeout: "5 minutes",
+});
+
+new sst.aws.Cron("ComputeMediansCron", {
+  schedule: "rate(1 day)",
+  job: computeMediansFn,
+});
+```
+
+The Lambda scans all Attempt records, filters `timeTakenMs` to `[3000, 600000]`, computes the median per `tierId`, and overwrites the config item. See `adaptive-difficulty.md` §5.5 for the algorithm detail.
+
+**IAM:** `link: [table]` grants DynamoDB Scan + PutItem on the table. No API Gateway or Cognito permissions needed.
+
+---
+
+### 3.7 CloudFront Distribution for Snippet Bucket
 
 The snippet bucket is fronted by a separate CloudFront distribution (distinct from the SPA's CloudFront) to serve snippet content with OAC:
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A gamified, web-based **vulnerability identification and education platform**. Users are shown Java code snippets (some containing a security flaw, some not) and must click the vulnerable line(s) to identify them. The platform provides OWASP-categorised feedback and adapts difficulty based on the user's performance history.
 
-Full product requirements: `docs/PRD.md`. Architecture decisions: `docs/high-level-design.md`.
+Architecture decisions: `docs/high-level-design.md`.
 
 ## Development Workflow: Linked-Intent Development (LID)
 
@@ -163,10 +163,9 @@ The script validates all entries before writing anything. It is idempotent (upse
 
 | Document | Location | Covers |
 |---|---|---|
-| PRD | `docs/PRD.md` | Product requirements |
 | HLD | `docs/high-level-design.md` | System architecture, key decisions |
 | Data Model LLD | `docs/llds/data-model.md` | DynamoDB single-table schema, GSIs, S3 layout |
-| API LLD | `docs/llds/api.md` | Lambda request/response contracts, validation |
+| API LLD | `docs/llds/api.md` | All 6 Lambda request/response contracts, validation |
 | Adaptive Difficulty LLD | `docs/llds/adaptive-difficulty.md` | Scoring algorithm, tier transitions |
 | Frontend LLD | `docs/llds/frontend.md` | Component tree, auth flow, game loop state machine |
 | Snippet Loader LLD | `docs/llds/snippet-loader.md` | Python script design, `metadata.json` schema |
